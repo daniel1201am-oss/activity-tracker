@@ -3,6 +3,7 @@ const ASSETS = [
   "/activity-tracker/",
   "/activity-tracker/index.html",
   "/activity-tracker/manifest.json",
+  "/activity-tracker/icon.svg",
   "/activity-tracker/icon-192.png",
   "/activity-tracker/icon-512.png"
 ];
