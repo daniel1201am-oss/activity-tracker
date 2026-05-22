@@ -864,15 +864,7 @@ function renderTrendView() {
   const container = document.getElementById("trendView");
   const current = getCurrentWeekKey();
 
-  // Take up to 12 most recent weeks with data, show last 4 with data
-  const allKeys = getSortedWeekKeys();
-  const recentKeys = allKeys.slice(0, 12);
-  const displayKeys = recentKeys.slice(0, 4); // newest 4 (or fewer)
-
-  if (displayKeys.length === 0) {
-    container.innerHTML = `<div class="trend-area"><div class="trend-title" style="color:#8e8e93">尚無歷史數據，請先輸入本週數據</div></div>`;
-    return;
-  }
+  const displayKeys = getVisibleWeeks();
 
   let html = `<div class="trend-title">最近 ${displayKeys.length} 週趨勢對比</div>`;
 
