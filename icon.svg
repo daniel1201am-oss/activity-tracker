@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+ <defs>
+ <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" style="stop-color:#ffffff"/>
+ <stop offset="100%" style="stop-color:#f9f9f9"/>
+ </linearGradient>
+ <linearGradient id="bar1" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" style="stop-color:#007aff"/>
+ <stop offset="100%" style="stop-color:#007aff44"/>
+ </linearGradient>
+ <linearGradient id="bar2" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" style="stop-color:#ff9500"/>
+ <stop offset="100%" style="stop-color:#ff950044"/>
+ </linearGradient>
+ <linearGradient id="bar3" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" style="stop-color:#007aff"/>
+ <stop offset="100%" style="stop-color:#007aff44"/>
+ </linearGradient>
+ <linearGradient id="bar4" x1="0%" y1="0%" x2="0%" y2="100%">
+ <stop offset="0%" style="stop-color:#007aff"/>
+ <stop offset="100%" style="stop-color:#007aff44"/>
+ </linearGradient>
+ <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" style="stop-color:#007aff"/>
+ <stop offset="100%" style="stop-color:#0055d4"/>
+ </linearGradient>
+ <clipPath id="roundedClip">
+ <rect width="1024" height="1024" rx="224" ry="224"/>
+ </clipPath>
+ <filter id="shadow">
+ <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#007aff" flood-opacity="0.15"/>
+ </filter>
+ <filter id="softShadow">
+ <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#007aff" flood-opacity="0.12"/>
+ </filter>
+ <filter id="orangeShadow">
+ <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#ff9500" flood-opacity="0.15"/>
+ </filter>
+ </defs>
+ <g clip-path="url(#roundedClip)">
+ <rect width="1024" height="1024" fill="url(#bgGrad)"/>
+ <g opacity="0.04" stroke="#007aff" stroke-width="1">
+ <line x1="0" y1="256" x2="1024" y2="256"/>
+ <line x1="0" y1="512" x2="1024" y2="512"/>
+ <line x1="0" y1="768" x2="1024" y2="768"/>
+ <line x1="256" y1="0" x2="256" y2="1024"/>
+ <line x1="512" y1="0" x2="512" y2="1024"/>
+ <line x1="768" y1="0" x2="768" y2="1024"/>
+ </g>
+ <circle cx="762" cy="262" r="88" fill="none" stroke="#e5e5ea" stroke-width="10"/>
+ <circle cx="762" cy="262" r="88" fill="none" stroke="url(#ringGrad)" stroke-width="10" stroke-dasharray="415 138" stroke-dashoffset="104" stroke-linecap="round" transform="rotate(-90 762 262)" filter="url(#shadow)"/>
+ <text x="762" y="255" text-anchor="middle" font-family="'SF Mono', 'Courier New', monospace" font-size="52" font-weight="700" fill="#007aff">78</text>
+ <text x="762" y="285" text-anchor="middle" font-family="'SF Mono', monospace" font-size="22" fill="#007aff77">分</text>
+ <line x1="148" y1="700" x2="876" y2="700" stroke="#e5e5ea" stroke-width="2"/>
+ <rect x="178" y="420" width="120" height="280" rx="8" fill="url(#bar1)" filter="url(#shadow)"/>
+ <rect x="348" y="510" width="120" height="190" rx="8" fill="url(#bar2)" filter="url(#orangeShadow)"/>
+ <rect x="518" y="560" width="120" height="140" rx="8" fill="url(#bar3)" filter="url(#shadow)" opacity="0.8"/>
+ <rect x="688" y="490" width="120" height="210" rx="8" fill="url(#bar4)" filter="url(#shadow)"/>
+ <polyline points="238,390 408,480 578,530 748,460" fill="none" stroke="#007aff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+ <circle cx="238" cy="390" r="10" fill="#007aff" filter="url(#shadow)"/>
+ <circle cx="408" cy="480" r="10" fill="#ff9500" filter="url(#orangeShadow)"/>
+ <circle cx="578" cy="530" r="10" fill="#007aff" filter="url(#shadow)"/>
+ <circle cx="748" cy="460" r="12" fill="#007aff" filter="url(#softShadow)"/>
+ <text x="238" y="748" text-anchor="middle" font-family="'SF Mono', monospace" font-size="28" fill="#007aff88">接觸</text>
+ <text x="408" y="748" text-anchor="middle" font-family="'SF Mono', monospace" font-size="28" fill="#ff950088">約見</text>
+ <text x="578" y="748" text-anchor="middle" font-family="'SF Mono', monospace" font-size="22" fill="#007aff88">PRO</text>
+ <text x="748" y="748" text-anchor="middle" font-family="'SF Mono', monospace" font-size="28" fill="#007aff88">成交</text>
+ <text x="512" y="870" text-anchor="middle" font-family="'SF Mono', 'Courier New', monospace" font-size="30" font-weight="700" letter-spacing="6" fill="#1c1c1e" opacity="0.8">ACTIVITY</text>
+ <text x="512" y="916" text-anchor="middle" font-family="'SF Mono', monospace" font-size="30" font-weight="700" letter-spacing="6" fill="#007aff" opacity="0.75">TRACKER</text>
+ <rect x="148" y="180" width="180" height="52" rx="26" fill="#007aff0f" stroke="#007aff2a" stroke-width="1.5"/>
+ <text x="238" y="213" text-anchor="middle" font-family="'SF Mono', monospace" font-size="22" letter-spacing="2" fill="#007aff">週報告</text>
+ <circle cx="148" cy="148" r="6" fill="#007aff" opacity="0.2"/>
+ <circle cx="876" cy="876" r="6" fill="#007aff" opacity="0.2"/>
+ </g>
+</svg>
