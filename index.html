@@ -9,135 +9,127 @@
 
   body {
     min-height: 100vh;
-    background: #0a0a0f;
-    font-family: 'DM Mono', 'Courier New', monospace;
-    color: #e8e8e8;
+    background: #f2f2f7;
+    font-family: -apple-system, 'SF Pro Text', 'Segoe UI', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    color: #1c1c1e;
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* ── Top bar ── */
   .topbar {
-    border-bottom: 1px solid #1e1e2e;
-    padding: 18px 24px;
+    border-bottom: 1px solid #e5e5ea;
+    padding: 14px 18px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #0d0d14;
+    background: #fff;
   }
 
   .topbar-brand div:first-child {
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: #555;
-    margin-bottom: 2px;
+    font-size: 10px; letter-spacing: 3px; color: #8e8e93; margin-bottom: 2px;
   }
 
   .topbar-brand div:last-child {
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: 1px;
+    font-size: 16px; font-weight: 700; color: #1c1c1e; letter-spacing: 0.5px;
   }
 
   .score-ring {
-    width: 52px; height: 52px;
+    width: 48px; height: 48px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     flex-direction: column;
-    background: #0a0a0f;
+    background: #fff;
     transition: border-color 0.4s, box-shadow 0.4s;
   }
 
   .score-ring .val {
-    font-size: 14px; font-weight: 700; line-height: 1;
+    font-size: 13px; font-weight: 700; line-height: 1;
     transition: color 0.4s;
   }
 
   .score-ring .lbl {
-    font-size: 8px; color: #555; letter-spacing: 1px;
+    font-size: 7px; color: #8e8e93; letter-spacing: 1px;
   }
 
   /* ── Week tabs ── */
   .weeks {
     display: flex;
     align-items: stretch;
-    border-bottom: 1px solid #1e1e2e;
-    background: #0d0d14;
+    border-bottom: 1px solid #e5e5ea;
+    background: #fff;
+    padding: 6px 8px; gap: 4px;
   }
 
   .week-nav {
-    width: 36px; border: none; cursor: pointer;
+    width: 32px; border: none; cursor: pointer;
     background: transparent;
-    font-size: 10px; color: #555;
+    font-size: 11px; color: #8e8e93;
     font-family: inherit;
     transition: color 0.2s;
     flex-shrink: 0;
+    border-radius: 10px;
   }
 
-  .week-nav:hover { color: #00e5a0; }
-  .week-nav:disabled { color: #222; cursor: default; }
+  .week-nav:hover { color: #007AFF; background: #f2f2f7; }
+  .week-nav:disabled { color: #d1d1d6; cursor: default; background: transparent; }
 
   .week-tabs-inner {
-    display: flex; flex: 1; overflow: hidden;
+    display: flex; flex: 1; overflow: hidden; gap: 4px;
   }
 
   .week-btn {
-    flex: 1; padding: 10px 4px; border: none; cursor: pointer;
-    background: transparent;
-    font-size: 10px; letter-spacing: 0.5px;
+    flex: 1; padding: 8px 4px; border: none; cursor: pointer;
+    background: #f2f2f7;
+    font-size: 10px; letter-spacing: 0.3px;
     font-family: inherit;
     transition: all 0.2s;
-    border-bottom: 2px solid transparent;
-    line-height: 1.3;
-    text-align: center;
+    line-height: 1.3; text-align: center;
+    border-radius: 12px;
   }
 
-  .week-btn .date-range {
-    display: block; font-size: 10px;
-  }
-
+  .week-btn .date-range { display: block; font-size: 10px; }
   .week-btn .week-label {
-    display: block; font-size: 7px; letter-spacing: 1px;
-    margin-top: 2px;
+    display: block; font-size: 7px; letter-spacing: 1px; margin-top: 2px;
   }
 
   .week-btn.active {
-    border-bottom: 2px solid #00e5a0;
+    background: #007AFF; color: #fff;
   }
 
   /* ── View toggle ── */
   .view-toggle {
-    display: flex; padding: 16px 24px 0; gap: 8px;
+    display: flex; padding: 16px 18px 0; gap: 8px;
   }
 
   .view-btn {
-    padding: 6px 16px; border-radius: 20px; border: 1px solid #1e1e2e;
-    cursor: pointer; font-size: 12px; letter-spacing: 1px;
-    font-family: inherit;
-    background: #1a1a2a; color: #555;
+    padding: 8px 20px; border-radius: 20px; border: none;
+    cursor: pointer; font-size: 13px; letter-spacing: 0.5px;
+    font-family: inherit; font-weight: 500;
+    background: #e5e5ea; color: #8e8e93;
     transition: all 0.2s;
   }
 
   .view-btn.active {
-    background: #00e5a044; color: #00e5a0;
-    border-color: #00e5a055;
+    background: #007AFF; color: #fff;
   }
 
   /* ── Metric cards ── */
   .input-area {
-    padding: 20px 24px;
+    padding: 16px 18px;
   }
 
   .card {
-    background: #0d0d14;
-    border: 1px solid #1e1e2e;
-    border-radius: 14px;
-    padding: 18px 20px;
-    margin-bottom: 12px;
-    transition: border 0.2s;
+    background: #fff;
+    border: none;
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: box-shadow 0.2s;
   }
 
-  .card.editing { border-color: #00e5a066; }
+  .card.editing { box-shadow: 0 0 0 2px #007AFF33; }
 
   .card-row {
     display: flex; align-items: flex-start; justify-content: space-between;
@@ -146,20 +138,20 @@
   .card-info { flex: 1; }
 
   .card-header {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px; margin-bottom: 2px;
   }
 
   .card-header .icon { font-size: 14px; }
-  .card-header .label { font-size: 13px; font-weight: 600; color: #ccc; letter-spacing: 1px; }
+  .card-header .label { font-size: 13px; font-weight: 600; color: #1c1c1e; }
 
   .card-desc {
-    font-size: 11px; color: #444; margin-bottom: 14px; letter-spacing: 0.5px;
+    font-size: 11px; color: #8e8e93; margin-bottom: 12px;
   }
 
   /* Progress bar */
   .progress-track {
-    background: #1a1a2a; border-radius: 4px; height: 4px;
-    margin-bottom: 8px; overflow: hidden;
+    background: #f2f2f7; border-radius: 4px; height: 6px;
+    margin-bottom: 6px; overflow: hidden;
   }
 
   .progress-fill {
@@ -169,53 +161,54 @@
 
   .progress-labels {
     display: flex; justify-content: space-between;
-    font-size: 10px; color: #444;
+    font-size: 10px; color: #aeaeb2;
   }
 
   /* Value */
   .card-value-area {
-    margin-left: 20px; text-align: center;
+    margin-left: 16px; text-align: center;
   }
 
   .value-display {
-    width: 60px; height: 44px;
+    width: 56px; height: 42px;
     display: flex; align-items: center; justify-content: center;
-    background: #1a1a2a; border-radius: 8px; cursor: pointer;
-    border: 1px solid #2a2a3a;
-    font-size: 24px; font-weight: 700;
+    background: #f2f2f7; border-radius: 10px; cursor: pointer;
+    border: 1px solid #e5e5ea;
+    font-size: 22px; font-weight: 700;
     transition: box-shadow 0.3s;
   }
 
   .value-input {
-    width: 60px; text-align: center;
-    background: #1a1a2a; border: 1px solid #00e5a0;
-    border-radius: 8px; color: #fff; font-size: 22px; font-weight: 700;
+    width: 56px; text-align: center;
+    background: #f2f2f7; border: 2px solid #007AFF;
+    border-radius: 10px; color: #1c1c1e; font-size: 22px; font-weight: 700;
     padding: 4px 0; outline: none;
     font-family: inherit;
   }
 
-  .value-unit { font-size: 10px; color: #444; margin-top: 4px; }
-  .value-pct { font-size: 11px; color: #555; margin-top: 2px; }
+  .value-unit { font-size: 10px; color: #aeaeb2; margin-top: 4px; }
+  .value-pct { font-size: 11px; margin-top: 2px; }
 
   /* ── Funnel ── */
   .funnel {
-    background: #0d0d14; border: 1px solid #1e1e2e;
-    border-radius: 14px; padding: 18px 20px; margin-top: 8px;
+    background: #fff;
+    border-radius: 16px; padding: 16px 18px; margin-top: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
   .funnel-title {
-    font-size: 11px; letter-spacing: 3px; color: #666; margin-bottom: 16px;
+    font-size: 11px; letter-spacing: 2px; color: #8e8e93; margin-bottom: 14px;
   }
 
-  .funnel-row { margin-bottom: 12px; }
+  .funnel-row { margin-bottom: 10px; }
 
   .funnel-head {
     display: flex; justify-content: space-between;
-    margin-bottom: 5px; font-size: 12px; color: #666;
+    margin-bottom: 4px; font-size: 12px; color: #8e8e93;
   }
 
   .funnel-bar-bg {
-    background: #1a1a2a; border-radius: 3px; height: 3px; overflow: hidden;
+    background: #f2f2f7; border-radius: 3px; height: 4px; overflow: hidden;
   }
 
   .funnel-bar {
@@ -224,35 +217,36 @@
   }
 
   .diagnosis {
-    margin-top: 16px; padding: 12px;
-    background: #111120; border-radius: 10px;
-    font-size: 12px; color: #666; line-height: 1.7;
+    margin-top: 14px; padding: 12px;
+    background: #f9f9fc; border-radius: 12px;
+    font-size: 12px; color: #8e8e93; line-height: 1.7;
   }
 
   /* ── Trend view ── */
   .trend-area {
-    padding: 20px 24px;
+    padding: 16px 18px;
   }
 
   .trend-title {
-    font-size: 11px; letter-spacing: 3px; color: #777; margin-bottom: 20px;
+    font-size: 11px; letter-spacing: 2px; color: #8e8e93; margin-bottom: 16px;
   }
 
   .trend-card {
-    background: #0d0d14; border: 1px solid #1e1e2e;
-    border-radius: 14px; padding: 18px 20px; margin-bottom: 12px;
+    background: #fff;
+    border-radius: 16px; padding: 16px 18px; margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
   .trend-card-head {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
   }
 
   .trend-card-head .label {
-    font-size: 13px; color: #ccc; letter-spacing: 1px;
+    font-size: 13px; color: #1c1c1e; font-weight: 600;
   }
 
   .trend-card-head .target {
-    margin-left: auto; font-size: 11px; color: #444;
+    margin-left: auto; font-size: 11px; color: #8e8e93;
   }
 
   .trend-bars {
@@ -272,30 +266,29 @@
     transition: height 0.4s ease;
   }
 
-  .trend-bar-label {
-    font-size: 10px;
-  }
+  .trend-bar-label { font-size: 9px; }
 
   /* ── Weekly score ── */
   .weekly-scores {
-    background: #0d0d14; border: 1px solid #1e1e2e;
-    border-radius: 14px; padding: 18px 20px;
+    background: #fff;
+    border-radius: 16px; padding: 16px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
   .weekly-scores-title {
-    font-size: 11px; letter-spacing: 3px; color: #444; margin-bottom: 16px;
+    font-size: 11px; letter-spacing: 2px; color: #8e8e93; margin-bottom: 14px;
   }
 
   .weekly-row {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
   }
 
   .weekly-row .wk-label {
-    width: 40px; font-size: 11px;
+    width: 40px; font-size: 10px;
   }
 
   .weekly-bar-bg {
-    flex: 1; background: #1a1a2a; border-radius: 4px; height: 6px; overflow: hidden;
+    flex: 1; background: #f2f2f7; border-radius: 4px; height: 6px; overflow: hidden;
   }
 
   .weekly-bar {
@@ -304,51 +297,53 @@
   }
 
   .weekly-bar-score {
-    width: 36px; text-align: right; font-size: 13px; font-weight: 700;
+    width: 32px; text-align: right; font-size: 13px; font-weight: 700;
   }
 
   /* ── Settings ── */
   .btn-settings {
-    width: 36px; height: 36px; border-radius: 50%;
-    border: 1px solid #2a2a3a; background: transparent;
-    color: #555; cursor: pointer; font-size: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid #e5e5ea; background: #f2f2f7;
+    color: #8e8e93; cursor: pointer; font-size: 14px;
     display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; margin-left: 12px;
+    transition: all 0.2s; margin-left: 10px;
   }
-  .btn-settings:hover { border-color: #00e5a0; color: #00e5a0; }
+  .btn-settings:hover { border-color: #007AFF; color: #007AFF; background: #fff; }
 
   .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
     z-index: 100; display: flex; align-items: center; justify-content: center;
     padding: 24px;
   }
 
   .modal {
-    background: #0d0d14; border: 1px solid #1e1e2e;
-    border-radius: 16px; padding: 24px; width: 100%; max-width: 360px;
+    background: #fff;
+    border-radius: 20px; padding: 24px; width: 100%; max-width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
   }
 
   .modal-title {
-    font-size: 14px; font-weight: 600; letter-spacing: 1px;
+    font-size: 15px; font-weight: 600; letter-spacing: 0.5px;
     margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+    color: #1c1c1e;
   }
 
   .modal-close {
     margin-left: auto; background: none; border: none;
-    color: #555; cursor: pointer; font-size: 18px;
+    color: #8e8e93; cursor: pointer; font-size: 18px;
     font-family: inherit;
   }
 
   .setting-row {
     display: flex; align-items: center; gap: 12px;
-    margin-bottom: 14px; padding: 10px 14px;
-    background: #111120; border-radius: 10px;
+    margin-bottom: 10px; padding: 10px 12px;
+    background: #f2f2f7; border-radius: 12px;
   }
 
   .setting-row .s-icon { font-size: 14px; flex-shrink: 0; }
 
   .setting-row .s-label {
-    font-size: 12px; color: #ccc; letter-spacing: 1px;
+    font-size: 13px; color: #1c1c1e; font-weight: 500;
     flex: 1;
   }
 
@@ -357,41 +352,41 @@
   }
 
   .setting-row .s-unit {
-    font-size: 10px; color: #444;
+    font-size: 10px; color: #8e8e93;
   }
 
   .setting-row input {
-    width: 56px; text-align: center;
-    background: #1a1a2a; border: 1px solid #2a2a3a;
-    border-radius: 6px; color: #fff; font-size: 16px; font-weight: 700;
+    width: 52px; text-align: center;
+    background: #fff; border: 1px solid #d1d1d6;
+    border-radius: 8px; color: #1c1c1e; font-size: 15px; font-weight: 700;
     padding: 6px 0; outline: none; font-family: inherit;
   }
-  .setting-row input:focus { border-color: #00e5a0; }
+  .setting-row input:focus { border-color: #007AFF; }
 
   .modal-actions {
     display: flex; gap: 8px; margin-top: 20px;
   }
 
   .btn-reset {
-    flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #2a2a3a;
-    background: transparent; color: #555; cursor: pointer;
-    font-size: 11px; letter-spacing: 1px; font-family: inherit;
+    flex: 1; padding: 11px; border-radius: 12px; border: 1px solid #e5e5ea;
+    background: #fff; color: #8e8e93; cursor: pointer;
+    font-size: 12px; font-weight: 500; font-family: inherit;
     transition: all 0.2s;
   }
-  .btn-reset:hover { border-color: #ff5c5c; color: #ff5c5c; }
+  .btn-reset:hover { border-color: #ff3b30; color: #ff3b30; }
 
   .btn-save {
-    flex: 2; padding: 10px; border-radius: 8px; border: none;
-    background: #00e5a022; color: #00e5a0; cursor: pointer;
-    font-size: 12px; font-weight: 600; letter-spacing: 1px; font-family: inherit;
+    flex: 2; padding: 11px; border-radius: 12px; border: none;
+    background: #007AFF; color: #fff; cursor: pointer;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px; font-family: inherit;
     transition: all 0.2s;
   }
-  .btn-save:hover { background: #00e5a033; }
+  .btn-save:hover { background: #0056cc; }
 
   /* ── Footer ── */
   .footer-note {
-    padding: 8px 24px 32px; font-size: 11px; color: #2a2a3a;
-    text-align: center; letter-spacing: 1px;
+    padding: 8px 18px 32px; font-size: 11px; color: #aeaeb2;
+    text-align: center; letter-spacing: 0.5px;
   }
 </style>
 </head>
@@ -435,7 +430,7 @@
 <div class="modal-overlay" id="settingsModal" style="display:none">
   <div class="modal">
     <div class="modal-title">
-      <span style="color:#00e5a0">⚙</span> 自訂目標
+      <span style="color:#007AFF">⚙</span> 自訂目標
       <button class="modal-close" id="btnModalClose">✕</button>
     </div>
     <div id="settingsForm"></div>
@@ -616,9 +611,9 @@ function getVisibleWeeks() {
 
 // ── Helpers ──
 function getColor(rate) {
-  if (rate >= 100) return "#00e5a0";
-  if (rate >= 70)  return "#f5c842";
-  return "#ff5c5c";
+  if (rate >= 100) return "#007AFF";
+  if (rate >= 70)  return "#ff9500";
+  return "#ff3b30";
 }
 
 function getRate(metricKey) {
@@ -660,7 +655,7 @@ function renderSettingsForm() {
   METRICS.forEach(m => {
     const val = getTarget(m.key);
     html += `<div class="setting-row">
-      <span class="s-icon" style="color:#00e5a0">${m.icon}</span>
+      <span class="s-icon" style="color:#007AFF">${m.icon}</span>
       <span class="s-label">${m.label}</span>
       <div class="s-target">
         <input type="number" id="tgt_${m.key}" value="${val}" min="1">
@@ -715,7 +710,7 @@ function renderWeekTabs() {
     const isActive = key === activeWeekKey;
     const isCurrent = key === current;
     const cls = isActive ? "week-btn active" : "week-btn";
-    const color = isActive ? "#00e5a0" : "#444";
+    const color = isActive ? "#007AFF" : "#aeaeb2";
     const range = allWeeks[key] ? formatWeekRange(key) : formatWeekRange(key);
     const label = isCurrent ? "本週" : "";
 
@@ -766,7 +761,7 @@ function renderInputView() {
             </div>
             <div class="progress-labels">
               <span>0</span>
-              <span style="color:#555">目標 ${getTarget(m.key)}${m.unit}</span>
+              <span style="color:#8e8e93">目標 ${getTarget(m.key)}${m.unit}</span>
             </div>
           </div>
           <div class="card-value-area">
@@ -775,7 +770,7 @@ function renderInputView() {
               : `<div class="value-display" data-key="${m.key}" style="color:${color};box-shadow:${rate >= 100 ? `0 0 12px ${color}44` : "none"}">${val}</div>`
             }
             <div class="value-unit">${m.unit}</div>
-            <div class="value-pct" style="color:${rate >= 100 ? color : "#555"}">${rate}%</div>
+            <div class="value-pct" style="color:${rate >= 100 ? color : "#8e8e93"}">${rate}%</div>
           </div>
         </div>
       </div>`;
@@ -797,7 +792,7 @@ function renderInputView() {
     html += `<div class="funnel-row">
       <div class="funnel-head">
         <span>${f.label}</span>
-        <span style="color:${rate > 0 ? color : "#333"}">${rate > 0 ? rate + "%" : "—"}</span>
+        <span style="color:${rate > 0 ? color : "#8e8e93"}">${rate > 0 ? rate + "%" : "—"}</span>
       </div>
       <div class="funnel-bar-bg">
         <div class="funnel-bar" style="width:${rate}%;background:${color}"></div>
@@ -812,15 +807,15 @@ function renderInputView() {
 
   let diag;
   if (!w.contact) {
-    diag = `<span style="color:#333">輸入數據後自動診斷漏斗問題 ↑</span>`;
+    diag = `<span style="color:#8e8e93">輸入數據後自動診斷漏斗問題 ↑</span>`;
   } else if (cr < 30) {
-    diag = `<span style="color:#f5c842">⚠ </span><span>約見率偏低——重新檢視開場白和跟進話術</span>`;
+    diag = `<span style="color:#ff9500">⚠ </span><span>約見率偏低——重新檢視開場白和跟進話術</span>`;
   } else if (mr < 40) {
-    diag = `<span style="color:#f5c842">⚠ </span><span>Proposal率偏低——見面質素需提升，考慮先做需求分析</span>`;
+    diag = `<span style="color:#ff9500">⚠ </span><span>Proposal率偏低——見面質素需提升，考慮先做需求分析</span>`;
   } else if (pr < 50) {
-    diag = `<span style="color:#f5c842">⚠ </span><span>成交率偏低——Proposal後的跟進流程需優化</span>`;
+    diag = `<span style="color:#ff9500">⚠ </span><span>成交率偏低——Proposal後的跟進流程需優化</span>`;
   } else {
-    diag = `<span style="color:#00e5a0">✓ </span><span>漏斗表現良好，繼續保持活動量！</span>`;
+    diag = `<span style="color:#007AFF">✓ </span><span>漏斗表現良好，繼續保持活動量！</span>`;
   }
 
   html += `<div class="diagnosis">${diag}</div></div>`;
@@ -868,7 +863,7 @@ function renderTrendView() {
   const displayKeys = recentKeys.slice(0, 4); // newest 4 (or fewer)
 
   if (displayKeys.length === 0) {
-    container.innerHTML = `<div class="trend-area"><div class="trend-title" style="color:#777">尚無歷史數據，請先輸入本週數據</div></div>`;
+    container.innerHTML = `<div class="trend-area"><div class="trend-title" style="color:#8e8e93">尚無歷史數據，請先輸入本週數據</div></div>`;
     return;
   }
 
@@ -880,7 +875,7 @@ function renderTrendView() {
   METRICS.forEach(m => {
     html += `<div class="trend-card">
       <div class="trend-card-head">
-        <span class="icon" style="color:#00e5a0;font-size:13px">${m.icon}</span>
+        <span class="icon" style="color:#007AFF;font-size:13px">${m.icon}</span>
         <span class="label">${m.label}</span>
         <span class="target">目標 ${getTarget(m.key)}</span>
       </div>
@@ -901,7 +896,7 @@ function renderTrendView() {
         <div class="trend-bar-wrap">
           <div class="trend-bar" style="height:${barH}px;background:linear-gradient(180deg,${color},${color}55);box-shadow:${isCurrent ? `0 0 10px ${color}55` : "none"};border:${isCurrent ? `1px solid ${color}66` : "none"}"></div>
         </div>
-        <div class="trend-bar-label" style="color:${isCurrent ? "#00e5a0" : "#777"}">${formatWeekRange(key)}</div>
+        <div class="trend-bar-label" style="color:${isCurrent ? "#007AFF" : "#8e8e93"}">${formatWeekRange(key)}</div>
       </div>`;
     });
 
@@ -919,7 +914,7 @@ function renderTrendView() {
     const isCurrent = key === current;
 
     html += `<div class="weekly-row">
-      <div class="wk-label" style="color:${isCurrent ? "#00e5a0" : "#777"};font-size:10px;width:auto;min-width:70px">${formatWeekRange(key)}</div>
+      <div class="wk-label" style="color:${isCurrent ? "#007AFF" : "#8e8e93"};font-size:10px;width:auto;min-width:70px">${formatWeekRange(key)}</div>
       <div class="weekly-bar-bg">
         <div class="weekly-bar" style="width:${score}%;background:linear-gradient(90deg,${color}88,${color})"></div>
       </div>
