@@ -874,6 +874,9 @@ function renderTrendView() {
 
   let html = `<div class="trend-title">最近 ${displayKeys.length} 週趨勢對比</div>`;
 
+  // Show oldest to newest (left to right)
+  const ordered = [...displayKeys].reverse();
+
   METRICS.forEach(m => {
     html += `<div class="trend-card">
       <div class="trend-card-head">
@@ -884,9 +887,6 @@ function renderTrendView() {
       <div class="trend-bars">`;
 
     const maxVal = Math.max(...displayKeys.map(k => (allWeeks[k] || emptyWeek())[m.key]), getTarget(m.key));
-
-    // Show oldest to newest (left to right)
-    const ordered = [...displayKeys].reverse();
 
     ordered.forEach(key => {
       const w = allWeeks[key] || emptyWeek();
