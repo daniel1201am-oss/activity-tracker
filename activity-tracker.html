@@ -60,17 +60,45 @@
   /* ── Week tabs ── */
   .weeks {
     display: flex;
+    align-items: stretch;
     border-bottom: 1px solid #1e1e2e;
     background: #0d0d14;
   }
 
-  .week-btn {
-    flex: 1; padding: 12px 0; border: none; cursor: pointer;
+  .week-nav {
+    width: 36px; border: none; cursor: pointer;
     background: transparent;
-    font-size: 12px; letter-spacing: 1px;
+    font-size: 10px; color: #555;
+    font-family: inherit;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+
+  .week-nav:hover { color: #00e5a0; }
+  .week-nav:disabled { color: #222; cursor: default; }
+
+  .week-tabs-inner {
+    display: flex; flex: 1; overflow: hidden;
+  }
+
+  .week-btn {
+    flex: 1; padding: 10px 4px; border: none; cursor: pointer;
+    background: transparent;
+    font-size: 10px; letter-spacing: 0.5px;
     font-family: inherit;
     transition: all 0.2s;
     border-bottom: 2px solid transparent;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .week-btn .date-range {
+    display: block; font-size: 10px;
+  }
+
+  .week-btn .week-label {
+    display: block; font-size: 7px; letter-spacing: 1px;
+    margin-top: 2px;
   }
 
   .week-btn.active {
@@ -301,7 +329,11 @@
 </div>
 
 <!-- ═══════ Week tabs ═══════ -->
-<div class="weeks" id="weekTabs"></div>
+<div class="weeks" id="weekTabs">
+  <button class="week-nav" id="btnPrev" title="更早">◀</button>
+  <div class="week-tabs-inner" id="weekTabsInner"></div>
+  <button class="week-nav" id="btnNext" title="較新">▶</button>
+</div>
 
 <!-- ═══════ View toggle ═══════ -->
 <div class="view-toggle">
@@ -319,10 +351,8 @@
 <div class="footer-note">點擊數字可以編輯 · 每週五更新一次</div>
 
 <script>
-const STORAGE_KEY = "insurance-activity-tracker";
-
-const WEEKS = ["本週", "上週", "兩週前", "三週前"];
-const WEEK_LABELS = ["三週前", "兩週前", "上週", "本週"];
+const STORAGE_KEY = "insurance-tracker-v2";
+const STORAGE_KEY_OLD = "insurance-activity-tracker";
 
 const METRICS = [
   { key: "contact", label: "接觸數", target: 20, unit: "人", icon: "◎", desc: "新舊客戶合計聯絡" },
@@ -331,34 +361,121 @@ const METRICS = [
   { key: "closed",   label: "成交/轉介", target: 10, unit: "個", icon: "◆", desc: "每月合計目標10+" },
 ];
 
+const emptyWeek = () => ({ contact: 0, meeting: 0, proposal: 0, closed: 0 });
+
+// ── Date utilities ──
+function getWeekMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getWeekKey(date) {
+  const m = getWeekMonday(date);
+  const y = m.getFullYear();
+  const mo = String(m.getMonth() + 1).padStart(2, "0");
+  const da = String(m.getDate()).padStart(2, "0");
+  return `${y}-${mo}-${da}`;
+}
+
+function formatWeekRange(key) {
+  const [y, mo, da] = key.split("-").map(Number);
+  const monday = new Date(y, mo - 1, da);
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  return `${monday.getMonth()+1}/${monday.getDate()}-${sunday.getMonth()+1}/${sunday.getDate()}`;
+}
+
+function addWeeks(key, n) {
+  const [y, mo, da] = key.split("-").map(Number);
+  const d = new Date(y, mo - 1, da);
+  d.setDate(d.getDate() + n * 7);
+  return getWeekKey(d);
+}
+
 // ── State ──
-let data = [
-  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
-  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
-  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
-  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
-];
-let activeWeek = 0;
+let allWeeks = {};       // { "2026-05-18": { contact, meeting, proposal, closed }, ... }
+let activeWeekKey = null;
+let weekOffset = 0;      // how many weeks back the first tab is from current week
 let view = "input";
 let editingKey = null;
 
 // ── Load / Save ──
+function migrateOldData() {
+  try {
+    const old = localStorage.getItem(STORAGE_KEY_OLD);
+    if (!old) return false;
+    const parsed = JSON.parse(old);
+    if (!Array.isArray(parsed) || parsed.length !== 4) return false;
+
+    const current = getCurrentWeekKey();
+    const migrated = {};
+    for (let i = 0; i < 4; i++) {
+      const key = addWeeks(current, -i);
+      migrated[key] = { ...emptyWeek(), ...parsed[i] };
+    }
+
+    allWeeks = migrated;
+    saveData();
+    localStorage.removeItem(STORAGE_KEY_OLD);
+    return true;
+  } catch (e) { return false; }
+}
+
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length === 4) {
-        data = parsed.map(w => ({ contact: 0, meeting: 0, proposal: 0, closed: 0, ...w }));
+      if (typeof parsed === "object" && !Array.isArray(parsed)) {
+        allWeeks = parsed;
+        return;
       }
     }
   } catch (e) { /* ignore */ }
+
+  // Try migrating old format
+  if (migrateOldData()) return;
+
+  // Fresh start
+  allWeeks = {};
 }
 
 function saveData() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allWeeks));
   } catch (e) { /* ignore */ }
+}
+
+function getCurrentWeekKey() {
+  return getWeekKey(new Date());
+}
+
+function ensureCurrentWeek() {
+  const current = getCurrentWeekKey();
+  if (!allWeeks[current]) {
+    allWeeks[current] = emptyWeek();
+    saveData();
+  }
+  return current;
+}
+
+// ── Week list ──
+function getSortedWeekKeys() {
+  return Object.keys(allWeeks).sort().reverse(); // newest first
+}
+
+function getVisibleWeeks() {
+  const current = getCurrentWeekKey();
+  const startKey = addWeeks(current, -weekOffset);
+  const weeks = [];
+  for (let i = 0; i < 4; i++) {
+    weeks.push(addWeeks(startKey, -i));
+  }
+  return weeks;
 }
 
 // ── Helpers ──
@@ -370,33 +487,62 @@ function getColor(rate) {
 
 function getRate(metricKey) {
   const m = METRICS.find(x => x.key === metricKey);
-  return Math.min(100, Math.round((data[activeWeek][metricKey] / m.target) * 100));
+  const w = allWeeks[activeWeekKey] || emptyWeek();
+  return Math.min(100, Math.round((w[metricKey] / m.target) * 100));
 }
 
 function getFunnelRate(from, to) {
-  if (!data[activeWeek][from]) return 0;
-  return Math.round((data[activeWeek][to] / data[activeWeek][from]) * 100);
+  const w = allWeeks[activeWeekKey] || emptyWeek();
+  if (!w[from]) return 0;
+  return Math.round((w[to] / w[from]) * 100);
 }
 
-function totalScore(weekIdx) {
-  const w = data[weekIdx];
+function calcScore(wk) {
+  const w = wk || emptyWeek();
   return Math.round(
     METRICS.reduce((sum, m) => sum + Math.min(100, (w[m.key] / m.target) * 100), 0) / METRICS.length
   );
 }
 
+function canGoPrev() {
+  const sorted = getSortedWeekKeys();
+  if (sorted.length === 0) return false;
+  const oldestKey = sorted[sorted.length - 1];
+  const visible = getVisibleWeeks();
+  return visible[3] > oldestKey;
+}
+
+function canGoNext() {
+  return weekOffset > 0;
+}
+
 // ── Render ──
 function renderWeekTabs() {
-  const container = document.getElementById("weekTabs");
-  container.innerHTML = WEEKS.map((w, i) => {
-    const cls = i === activeWeek ? "week-btn active" : "week-btn";
-    const color = i === activeWeek ? "#00e5a0" : "#444";
-    return `<button class="${cls}" data-idx="${i}" style="color:${color}">${w}</button>`;
+  const inner = document.getElementById("weekTabsInner");
+  const current = getCurrentWeekKey();
+  const visible = getVisibleWeeks();
+
+  inner.innerHTML = visible.map(key => {
+    const isActive = key === activeWeekKey;
+    const isCurrent = key === current;
+    const cls = isActive ? "week-btn active" : "week-btn";
+    const color = isActive ? "#00e5a0" : "#444";
+    const range = allWeeks[key] ? formatWeekRange(key) : formatWeekRange(key);
+    const label = isCurrent ? "本週" : "";
+
+    return `<button class="${cls}" data-key="${key}" style="color:${color}">
+      <span class="date-range">${range}</span>
+      ${label ? `<span class="week-label">${label}</span>` : ""}
+    </button>`;
   }).join("");
+
+  document.getElementById("btnPrev").disabled = !canGoPrev();
+  document.getElementById("btnNext").disabled = !canGoNext();
 }
 
 function renderScoreRing() {
-  const score = totalScore(activeWeek);
+  const w = allWeeks[activeWeekKey] || emptyWeek();
+  const score = calcScore(w);
   const color = getColor(score);
   const ring = document.getElementById("scoreRing");
   ring.style.border = `3px solid ${color}`;
@@ -407,7 +553,7 @@ function renderScoreRing() {
 
 function renderInputView() {
   const container = document.getElementById("inputView");
-  const w = data[activeWeek];
+  const w = allWeeks[activeWeekKey] || emptyWeek();
 
   let html = "";
 
@@ -495,7 +641,6 @@ function renderInputView() {
 }
 
 function bindInputEvents() {
-  // Click on value display -> edit mode
   document.querySelectorAll(".value-display").forEach(el => {
     el.addEventListener("click", () => {
       editingKey = el.dataset.key;
@@ -505,13 +650,13 @@ function bindInputEvents() {
     });
   });
 
-  // Edit input
   const inp = document.getElementById("editInput");
   if (inp) {
     const commit = () => {
       const key = inp.dataset.key;
       const n = Math.max(0, parseInt(inp.value) || 0);
-      data[activeWeek] = { ...data[activeWeek], [key]: n };
+      if (!allWeeks[activeWeekKey]) allWeeks[activeWeekKey] = emptyWeek();
+      allWeeks[activeWeekKey][key] = n;
       saveData();
       editingKey = null;
       renderAll();
@@ -526,9 +671,19 @@ function bindInputEvents() {
 
 function renderTrendView() {
   const container = document.getElementById("trendView");
-  const reversed = [...data].reverse(); // 三週前..本週
+  const current = getCurrentWeekKey();
 
-  let html = `<div class="trend-title">四週趨勢對比</div>`;
+  // Take up to 12 most recent weeks with data, show last 4 with data
+  const allKeys = getSortedWeekKeys();
+  const recentKeys = allKeys.slice(0, 12);
+  const displayKeys = recentKeys.slice(0, 4); // newest 4 (or fewer)
+
+  if (displayKeys.length === 0) {
+    container.innerHTML = `<div class="trend-area"><div class="trend-title" style="color:#333">尚無歷史數據，請先輸入本週數據</div></div>`;
+    return;
+  }
+
+  let html = `<div class="trend-title">最近 ${displayKeys.length} 週趨勢對比</div>`;
 
   METRICS.forEach(m => {
     html += `<div class="trend-card">
@@ -539,21 +694,25 @@ function renderTrendView() {
       </div>
       <div class="trend-bars">`;
 
-    const maxVal = Math.max(...data.map(d => d[m.key]), m.target);
+    const maxVal = Math.max(...displayKeys.map(k => (allWeeks[k] || emptyWeek())[m.key]), m.target);
 
-    reversed.forEach((w, i) => {
+    // Show oldest to newest (left to right)
+    const ordered = [...displayKeys].reverse();
+
+    ordered.forEach(key => {
+      const w = allWeeks[key] || emptyWeek();
       const val = w[m.key];
       const rate = Math.min(100, (val / m.target) * 100);
       const color = getColor(rate);
       const barH = Math.max(4, (val / maxVal) * 70);
-      const isCurrent = i === 3;
+      const isCurrent = key === current;
 
       html += `<div class="trend-bar-col">
         <div class="trend-bar-val" style="color:${color}">${val}</div>
         <div class="trend-bar-wrap">
           <div class="trend-bar" style="height:${barH}px;background:linear-gradient(180deg,${color},${color}55);box-shadow:${isCurrent ? `0 0 10px ${color}55` : "none"};border:${isCurrent ? `1px solid ${color}66` : "none"}"></div>
         </div>
-        <div class="trend-bar-label" style="color:${isCurrent ? "#00e5a0" : "#333"}">${WEEK_LABELS[i]}</div>
+        <div class="trend-bar-label" style="color:${isCurrent ? "#00e5a0" : "#333"}">${formatWeekRange(key)}</div>
       </div>`;
     });
 
@@ -564,15 +723,14 @@ function renderTrendView() {
   html += `<div class="weekly-scores">
     <div class="weekly-scores-title">週間評分</div>`;
 
-  reversed.forEach((w, i) => {
-    const score = Math.round(
-      METRICS.reduce((sum, m) => sum + Math.min(100, (w[m.key] / m.target) * 100), 0) / METRICS.length
-    );
+  ordered.forEach(key => {
+    const w = allWeeks[key] || emptyWeek();
+    const score = calcScore(w);
     const color = getColor(score);
-    const isCurrent = i === 3;
+    const isCurrent = key === current;
 
     html += `<div class="weekly-row">
-      <div class="wk-label" style="color:${isCurrent ? "#00e5a0" : "#444"}">${WEEK_LABELS[i]}</div>
+      <div class="wk-label" style="color:${isCurrent ? "#00e5a0" : "#444"};font-size:10px;width:auto;min-width:70px">${formatWeekRange(key)}</div>
       <div class="weekly-bar-bg">
         <div class="weekly-bar" style="width:${score}%;background:linear-gradient(90deg,${color}88,${color})"></div>
       </div>
@@ -593,12 +751,30 @@ function renderAll() {
 }
 
 // ── Event delegation ──
-document.getElementById("weekTabs").addEventListener("click", e => {
+document.getElementById("weekTabsInner").addEventListener("click", e => {
   const btn = e.target.closest(".week-btn");
   if (!btn) return;
-  activeWeek = parseInt(btn.dataset.idx);
+  activeWeekKey = btn.dataset.key;
   editingKey = null;
   renderAll();
+});
+
+document.getElementById("btnPrev").addEventListener("click", () => {
+  if (canGoPrev()) {
+    weekOffset++;
+    activeWeekKey = getVisibleWeeks()[0];
+    editingKey = null;
+    renderAll();
+  }
+});
+
+document.getElementById("btnNext").addEventListener("click", () => {
+  if (canGoNext()) {
+    weekOffset--;
+    activeWeekKey = getVisibleWeeks()[0];
+    editingKey = null;
+    renderAll();
+  }
 });
 
 document.querySelector(".view-toggle").addEventListener("click", e => {
@@ -613,8 +789,22 @@ document.querySelector(".view-toggle").addEventListener("click", e => {
   document.getElementById("trendView").style.display = view === "trend" ? "" : "none";
 });
 
+// ── Footer update ──
+function updateFooter() {
+  const footer = document.querySelector(".footer-note");
+  if (footer) {
+    footer.textContent = "點擊數字可以編輯 · 資料自動依週歸檔 · 儲存於瀏覽器";
+  }
+}
+
 // ── Init ──
 loadData();
+const currentKey = ensureCurrentWeek();
+if (!activeWeekKey || !allWeeks[activeWeekKey]) {
+  activeWeekKey = currentKey;
+}
+weekOffset = 0;
+updateFooter();
 renderAll();
 </script>
 
