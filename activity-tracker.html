@@ -711,7 +711,7 @@ document.getElementById("settingsModal").addEventListener("click", e => {
 function renderWeekTabs() {
   const inner = document.getElementById("weekTabsInner");
   const current = getCurrentWeekKey();
-  const visible = getVisibleWeeks();
+  const visible = [...getVisibleWeeks()].reverse();
 
   inner.innerHTML = visible.map(key => {
     const isActive = key === activeWeekKey;
