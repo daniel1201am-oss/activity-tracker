@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>活動量追蹤器</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: #0a0a0f;
+    font-family: 'DM Mono', 'Courier New', monospace;
+    color: #e8e8e8;
+    overflow-x: hidden;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    border-bottom: 1px solid #1e1e2e;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #0d0d14;
+  }
+
+  .topbar-brand div:first-child {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: #555;
+    margin-bottom: 2px;
+  }
+
+  .topbar-brand div:last-child {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+  }
+
+  .score-ring {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    background: #0a0a0f;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+
+  .score-ring .val {
+    font-size: 14px; font-weight: 700; line-height: 1;
+    transition: color 0.4s;
+  }
+
+  .score-ring .lbl {
+    font-size: 8px; color: #555; letter-spacing: 1px;
+  }
+
+  /* ── Week tabs ── */
+  .weeks {
+    display: flex;
+    border-bottom: 1px solid #1e1e2e;
+    background: #0d0d14;
+  }
+
+  .week-btn {
+    flex: 1; padding: 12px 0; border: none; cursor: pointer;
+    background: transparent;
+    font-size: 12px; letter-spacing: 1px;
+    font-family: inherit;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+
+  .week-btn.active {
+    border-bottom: 2px solid #00e5a0;
+  }
+
+  /* ── View toggle ── */
+  .view-toggle {
+    display: flex; padding: 16px 24px 0; gap: 8px;
+  }
+
+  .view-btn {
+    padding: 6px 16px; border-radius: 20px; border: 1px solid #1e1e2e;
+    cursor: pointer; font-size: 12px; letter-spacing: 1px;
+    font-family: inherit;
+    background: #1a1a2a; color: #555;
+    transition: all 0.2s;
+  }
+
+  .view-btn.active {
+    background: #00e5a044; color: #00e5a0;
+    border-color: #00e5a055;
+  }
+
+  /* ── Metric cards ── */
+  .input-area {
+    padding: 20px 24px;
+  }
+
+  .card {
+    background: #0d0d14;
+    border: 1px solid #1e1e2e;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    transition: border 0.2s;
+  }
+
+  .card.editing { border-color: #00e5a066; }
+
+  .card-row {
+    display: flex; align-items: flex-start; justify-content: space-between;
+  }
+
+  .card-info { flex: 1; }
+
+  .card-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+  }
+
+  .card-header .icon { font-size: 14px; }
+  .card-header .label { font-size: 13px; font-weight: 600; color: #ccc; letter-spacing: 1px; }
+
+  .card-desc {
+    font-size: 11px; color: #444; margin-bottom: 14px; letter-spacing: 0.5px;
+  }
+
+  /* Progress bar */
+  .progress-track {
+    background: #1a1a2a; border-radius: 4px; height: 4px;
+    margin-bottom: 8px; overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-labels {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #444;
+  }
+
+  /* Value */
+  .card-value-area {
+    margin-left: 20px; text-align: center;
+  }
+
+  .value-display {
+    width: 60px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: #1a1a2a; border-radius: 8px; cursor: pointer;
+    border: 1px solid #2a2a3a;
+    font-size: 24px; font-weight: 700;
+    transition: box-shadow 0.3s;
+  }
+
+  .value-input {
+    width: 60px; text-align: center;
+    background: #1a1a2a; border: 1px solid #00e5a0;
+    border-radius: 8px; color: #fff; font-size: 22px; font-weight: 700;
+    padding: 4px 0; outline: none;
+    font-family: inherit;
+  }
+
+  .value-unit { font-size: 10px; color: #444; margin-top: 4px; }
+  .value-pct { font-size: 11px; color: #555; margin-top: 2px; }
+
+  /* ── Funnel ── */
+  .funnel {
+    background: #0d0d14; border: 1px solid #1e1e2e;
+    border-radius: 14px; padding: 18px 20px; margin-top: 8px;
+  }
+
+  .funnel-title {
+    font-size: 11px; letter-spacing: 3px; color: #444; margin-bottom: 16px;
+  }
+
+  .funnel-row { margin-bottom: 12px; }
+
+  .funnel-head {
+    display: flex; justify-content: space-between;
+    margin-bottom: 5px; font-size: 12px; color: #666;
+  }
+
+  .funnel-bar-bg {
+    background: #1a1a2a; border-radius: 3px; height: 3px; overflow: hidden;
+  }
+
+  .funnel-bar {
+    height: 100%; border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  .diagnosis {
+    margin-top: 16px; padding: 12px;
+    background: #111120; border-radius: 10px;
+    font-size: 12px; color: #666; line-height: 1.7;
+  }
+
+  /* ── Trend view ── */
+  .trend-area {
+    padding: 20px 24px;
+  }
+
+  .trend-title {
+    font-size: 11px; letter-spacing: 3px; color: #444; margin-bottom: 20px;
+  }
+
+  .trend-card {
+    background: #0d0d14; border: 1px solid #1e1e2e;
+    border-radius: 14px; padding: 18px 20px; margin-bottom: 12px;
+  }
+
+  .trend-card-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+
+  .trend-card-head .label {
+    font-size: 13px; color: #ccc; letter-spacing: 1px;
+  }
+
+  .trend-card-head .target {
+    margin-left: auto; font-size: 11px; color: #444;
+  }
+
+  .trend-bars {
+    display: flex; align-items: flex-end; gap: 8px; height: 80px;
+  }
+
+  .trend-bar-col {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+
+  .trend-bar-val { font-size: 11px; font-weight: 600; }
+
+  .trend-bar-wrap { width: 100%; display: flex; align-items: flex-end; height: 50px; }
+
+  .trend-bar {
+    width: 100%; border-radius: 4px 4px 2px 2px;
+    transition: height 0.4s ease;
+  }
+
+  .trend-bar-label {
+    font-size: 10px;
+  }
+
+  /* ── Weekly score ── */
+  .weekly-scores {
+    background: #0d0d14; border: 1px solid #1e1e2e;
+    border-radius: 14px; padding: 18px 20px;
+  }
+
+  .weekly-scores-title {
+    font-size: 11px; letter-spacing: 3px; color: #444; margin-bottom: 16px;
+  }
+
+  .weekly-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+  }
+
+  .weekly-row .wk-label {
+    width: 40px; font-size: 11px;
+  }
+
+  .weekly-bar-bg {
+    flex: 1; background: #1a1a2a; border-radius: 4px; height: 6px; overflow: hidden;
+  }
+
+  .weekly-bar {
+    height: 100%; border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .weekly-bar-score {
+    width: 36px; text-align: right; font-size: 13px; font-weight: 700;
+  }
+
+  /* ── Footer ── */
+  .footer-note {
+    padding: 8px 24px 32px; font-size: 11px; color: #2a2a3a;
+    text-align: center; letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════ Top bar ═══════ -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div>INSURANCE AGENT</div>
+    <div>活動量追蹤器</div>
+  </div>
+  <div class="score-ring" id="scoreRing">
+    <div class="val" id="scoreVal">0</div>
+    <div class="lbl">分</div>
+  </div>
+</div>
+
+<!-- ═══════ Week tabs ═══════ -->
+<div class="weeks" id="weekTabs"></div>
+
+<!-- ═══════ View toggle ═══════ -->
+<div class="view-toggle">
+  <button class="view-btn active" data-view="input">輸入</button>
+  <button class="view-btn" data-view="trend">趨勢</button>
+</div>
+
+<!-- ═══════ Input view ═══════ -->
+<div class="input-area" id="inputView"></div>
+
+<!-- ═══════ Trend view ═══════ -->
+<div class="trend-area" id="trendView" style="display:none"></div>
+
+<!-- ═══════ Footer ═══════ -->
+<div class="footer-note">點擊數字可以編輯 · 每週五更新一次</div>
+
+<script>
+const STORAGE_KEY = "insurance-activity-tracker";
+
+const WEEKS = ["本週", "上週", "兩週前", "三週前"];
+const WEEK_LABELS = ["三週前", "兩週前", "上週", "本週"];
+
+const METRICS = [
+  { key: "contact", label: "接觸數", target: 20, unit: "人", icon: "◎", desc: "新舊客戶合計聯絡" },
+  { key: "meeting",  label: "約見數", target: 8,  unit: "次", icon: "◈", desc: "成功坐下來的會面" },
+  { key: "proposal", label: "Proposal數", target: 3,  unit: "份", icon: "◇", desc: "有實質推進的建議書" },
+  { key: "closed",   label: "成交/轉介", target: 10, unit: "個", icon: "◆", desc: "每月合計目標10+" },
+];
+
+// ── State ──
+let data = [
+  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
+  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
+  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
+  { contact: 0, meeting: 0, proposal: 0, closed: 0 },
+];
+let activeWeek = 0;
+let view = "input";
+let editingKey = null;
+
+// ── Load / Save ──
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === 4) {
+        data = parsed.map(w => ({ contact: 0, meeting: 0, proposal: 0, closed: 0, ...w }));
+      }
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) { /* ignore */ }
+}
+
+// ── Helpers ──
+function getColor(rate) {
+  if (rate >= 100) return "#00e5a0";
+  if (rate >= 70)  return "#f5c842";
+  return "#ff5c5c";
+}
+
+function getRate(metricKey) {
+  const m = METRICS.find(x => x.key === metricKey);
+  return Math.min(100, Math.round((data[activeWeek][metricKey] / m.target) * 100));
+}
+
+function getFunnelRate(from, to) {
+  if (!data[activeWeek][from]) return 0;
+  return Math.round((data[activeWeek][to] / data[activeWeek][from]) * 100);
+}
+
+function totalScore(weekIdx) {
+  const w = data[weekIdx];
+  return Math.round(
+    METRICS.reduce((sum, m) => sum + Math.min(100, (w[m.key] / m.target) * 100), 0) / METRICS.length
+  );
+}
+
+// ── Render ──
+function renderWeekTabs() {
+  const container = document.getElementById("weekTabs");
+  container.innerHTML = WEEKS.map((w, i) => {
+    const cls = i === activeWeek ? "week-btn active" : "week-btn";
+    const color = i === activeWeek ? "#00e5a0" : "#444";
+    return `<button class="${cls}" data-idx="${i}" style="color:${color}">${w}</button>`;
+  }).join("");
+}
+
+function renderScoreRing() {
+  const score = totalScore(activeWeek);
+  const color = getColor(score);
+  const ring = document.getElementById("scoreRing");
+  ring.style.border = `3px solid ${color}`;
+  ring.style.boxShadow = `0 0 18px ${color}44`;
+  document.getElementById("scoreVal").style.color = color;
+  document.getElementById("scoreVal").textContent = score;
+}
+
+function renderInputView() {
+  const container = document.getElementById("inputView");
+  const w = data[activeWeek];
+
+  let html = "";
+
+  METRICS.forEach(m => {
+    const rate = getRate(m.key);
+    const color = getColor(rate);
+    const isEditing = editingKey === m.key;
+    const val = w[m.key];
+
+    html += `
+      <div class="card${isEditing ? " editing" : ""}" style="${isEditing ? `border-color:${color}66` : ""}">
+        <div class="card-row">
+          <div class="card-info">
+            <div class="card-header">
+              <span class="icon" style="color:${color}">${m.icon}</span>
+              <span class="label">${m.label}</span>
+            </div>
+            <div class="card-desc">${m.desc}</div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${rate}%;background:linear-gradient(90deg,${color}88,${color});box-shadow:0 0 8px ${color}66"></div>
+            </div>
+            <div class="progress-labels">
+              <span>0</span>
+              <span style="color:#555">目標 ${m.target}${m.unit}</span>
+            </div>
+          </div>
+          <div class="card-value-area">
+            ${isEditing
+              ? `<input class="value-input" type="number" id="editInput" value="${val}" data-key="${m.key}" style="border-color:${color}">`
+              : `<div class="value-display" data-key="${m.key}" style="color:${color};box-shadow:${rate >= 100 ? `0 0 12px ${color}44` : "none"}">${val}</div>`
+            }
+            <div class="value-unit">${m.unit}</div>
+            <div class="value-pct" style="color:${rate >= 100 ? color : "#555"}">${rate}%</div>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  // Funnel
+  html += `<div class="funnel">
+    <div class="funnel-title">漏斗分析</div>`;
+
+  const funnels = [
+    { from: "contact", to: "meeting",  label: "接觸 → 約見" },
+    { from: "meeting",  to: "proposal", label: "約見 → Proposal" },
+    { from: "proposal", to: "closed",   label: "Proposal → 成交" },
+  ];
+
+  funnels.forEach(f => {
+    const rate = getFunnelRate(f.from, f.to);
+    const color = getColor(rate);
+    html += `<div class="funnel-row">
+      <div class="funnel-head">
+        <span>${f.label}</span>
+        <span style="color:${rate > 0 ? color : "#333"}">${rate > 0 ? rate + "%" : "—"}</span>
+      </div>
+      <div class="funnel-bar-bg">
+        <div class="funnel-bar" style="width:${rate}%;background:${color}"></div>
+      </div>
+    </div>`;
+  });
+
+  // Diagnosis
+  const cr = getFunnelRate("contact", "meeting");
+  const mr = getFunnelRate("meeting", "proposal");
+  const pr = getFunnelRate("proposal", "closed");
+
+  let diag;
+  if (!w.contact) {
+    diag = `<span style="color:#333">輸入數據後自動診斷漏斗問題 ↑</span>`;
+  } else if (cr < 30) {
+    diag = `<span style="color:#f5c842">⚠ </span><span>約見率偏低——重新檢視開場白和跟進話術</span>`;
+  } else if (mr < 40) {
+    diag = `<span style="color:#f5c842">⚠ </span><span>Proposal率偏低——見面質素需提升，考慮先做需求分析</span>`;
+  } else if (pr < 50) {
+    diag = `<span style="color:#f5c842">⚠ </span><span>成交率偏低——Proposal後的跟進流程需優化</span>`;
+  } else {
+    diag = `<span style="color:#00e5a0">✓ </span><span>漏斗表現良好，繼續保持活動量！</span>`;
+  }
+
+  html += `<div class="diagnosis">${diag}</div></div>`;
+
+  container.innerHTML = html;
+  bindInputEvents();
+}
+
+function bindInputEvents() {
+  // Click on value display -> edit mode
+  document.querySelectorAll(".value-display").forEach(el => {
+    el.addEventListener("click", () => {
+      editingKey = el.dataset.key;
+      renderInputView();
+      const inp = document.getElementById("editInput");
+      if (inp) { inp.focus(); inp.select(); }
+    });
+  });
+
+  // Edit input
+  const inp = document.getElementById("editInput");
+  if (inp) {
+    const commit = () => {
+      const key = inp.dataset.key;
+      const n = Math.max(0, parseInt(inp.value) || 0);
+      data[activeWeek] = { ...data[activeWeek], [key]: n };
+      saveData();
+      editingKey = null;
+      renderAll();
+    };
+
+    inp.addEventListener("blur", commit);
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter") commit();
+    });
+  }
+}
+
+function renderTrendView() {
+  const container = document.getElementById("trendView");
+  const reversed = [...data].reverse(); // 三週前..本週
+
+  let html = `<div class="trend-title">四週趨勢對比</div>`;
+
+  METRICS.forEach(m => {
+    html += `<div class="trend-card">
+      <div class="trend-card-head">
+        <span class="icon" style="color:#00e5a0;font-size:13px">${m.icon}</span>
+        <span class="label">${m.label}</span>
+        <span class="target">目標 ${m.target}</span>
+      </div>
+      <div class="trend-bars">`;
+
+    const maxVal = Math.max(...data.map(d => d[m.key]), m.target);
+
+    reversed.forEach((w, i) => {
+      const val = w[m.key];
+      const rate = Math.min(100, (val / m.target) * 100);
+      const color = getColor(rate);
+      const barH = Math.max(4, (val / maxVal) * 70);
+      const isCurrent = i === 3;
+
+      html += `<div class="trend-bar-col">
+        <div class="trend-bar-val" style="color:${color}">${val}</div>
+        <div class="trend-bar-wrap">
+          <div class="trend-bar" style="height:${barH}px;background:linear-gradient(180deg,${color},${color}55);box-shadow:${isCurrent ? `0 0 10px ${color}55` : "none"};border:${isCurrent ? `1px solid ${color}66` : "none"}"></div>
+        </div>
+        <div class="trend-bar-label" style="color:${isCurrent ? "#00e5a0" : "#333"}">${WEEK_LABELS[i]}</div>
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  // Weekly scores
+  html += `<div class="weekly-scores">
+    <div class="weekly-scores-title">週間評分</div>`;
+
+  reversed.forEach((w, i) => {
+    const score = Math.round(
+      METRICS.reduce((sum, m) => sum + Math.min(100, (w[m.key] / m.target) * 100), 0) / METRICS.length
+    );
+    const color = getColor(score);
+    const isCurrent = i === 3;
+
+    html += `<div class="weekly-row">
+      <div class="wk-label" style="color:${isCurrent ? "#00e5a0" : "#444"}">${WEEK_LABELS[i]}</div>
+      <div class="weekly-bar-bg">
+        <div class="weekly-bar" style="width:${score}%;background:linear-gradient(90deg,${color}88,${color})"></div>
+      </div>
+      <div class="weekly-bar-score" style="color:${color}">${score}</div>
+    </div>`;
+  });
+
+  html += `</div>`;
+
+  container.innerHTML = html;
+}
+
+function renderAll() {
+  renderWeekTabs();
+  renderScoreRing();
+  renderInputView();
+  renderTrendView();
+}
+
+// ── Event delegation ──
+document.getElementById("weekTabs").addEventListener("click", e => {
+  const btn = e.target.closest(".week-btn");
+  if (!btn) return;
+  activeWeek = parseInt(btn.dataset.idx);
+  editingKey = null;
+  renderAll();
+});
+
+document.querySelector(".view-toggle").addEventListener("click", e => {
+  const btn = e.target.closest(".view-btn");
+  if (!btn) return;
+  view = btn.dataset.view;
+
+  document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  document.getElementById("inputView").style.display = view === "input" ? "" : "none";
+  document.getElementById("trendView").style.display = view === "trend" ? "" : "none";
+});
+
+// ── Init ──
+loadData();
+renderAll();
+</script>
+
+</body>
+</html>
