@@ -307,6 +307,87 @@
     width: 36px; text-align: right; font-size: 13px; font-weight: 700;
   }
 
+  /* ── Settings ── */
+  .btn-settings {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid #2a2a3a; background: transparent;
+    color: #555; cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; margin-left: 12px;
+  }
+  .btn-settings:hover { border-color: #00e5a0; color: #00e5a0; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+
+  .modal {
+    background: #0d0d14; border: 1px solid #1e1e2e;
+    border-radius: 16px; padding: 24px; width: 100%; max-width: 360px;
+  }
+
+  .modal-title {
+    font-size: 14px; font-weight: 600; letter-spacing: 1px;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+
+  .modal-close {
+    margin-left: auto; background: none; border: none;
+    color: #555; cursor: pointer; font-size: 18px;
+    font-family: inherit;
+  }
+
+  .setting-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px; padding: 10px 14px;
+    background: #111120; border-radius: 10px;
+  }
+
+  .setting-row .s-icon { font-size: 14px; flex-shrink: 0; }
+
+  .setting-row .s-label {
+    font-size: 12px; color: #ccc; letter-spacing: 1px;
+    flex: 1;
+  }
+
+  .setting-row .s-target {
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .setting-row .s-unit {
+    font-size: 10px; color: #444;
+  }
+
+  .setting-row input {
+    width: 56px; text-align: center;
+    background: #1a1a2a; border: 1px solid #2a2a3a;
+    border-radius: 6px; color: #fff; font-size: 16px; font-weight: 700;
+    padding: 6px 0; outline: none; font-family: inherit;
+  }
+  .setting-row input:focus { border-color: #00e5a0; }
+
+  .modal-actions {
+    display: flex; gap: 8px; margin-top: 20px;
+  }
+
+  .btn-reset {
+    flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #2a2a3a;
+    background: transparent; color: #555; cursor: pointer;
+    font-size: 11px; letter-spacing: 1px; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: #ff5c5c; color: #ff5c5c; }
+
+  .btn-save {
+    flex: 2; padding: 10px; border-radius: 8px; border: none;
+    background: #00e5a022; color: #00e5a0; cursor: pointer;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-save:hover { background: #00e5a033; }
+
   /* ── Footer ── */
   .footer-note {
     padding: 8px 24px 32px; font-size: 11px; color: #2a2a3a;
@@ -322,9 +403,12 @@
     <div>INSURANCE AGENT</div>
     <div>活動量追蹤器</div>
   </div>
-  <div class="score-ring" id="scoreRing">
-    <div class="val" id="scoreVal">0</div>
-    <div class="lbl">分</div>
+  <div style="display:flex;align-items:center">
+    <div class="score-ring" id="scoreRing">
+      <div class="val" id="scoreVal">0</div>
+      <div class="lbl">分</div>
+    </div>
+    <button class="btn-settings" id="btnSettings" title="自訂目標">⚙</button>
   </div>
 </div>
 
@@ -347,12 +431,30 @@
 <!-- ═══════ Trend view ═══════ -->
 <div class="trend-area" id="trendView" style="display:none"></div>
 
+<!-- ═══════ Settings modal ═══════ -->
+<div class="modal-overlay" id="settingsModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">
+      <span style="color:#00e5a0">⚙</span> 自訂目標
+      <button class="modal-close" id="btnModalClose">✕</button>
+    </div>
+    <div id="settingsForm"></div>
+    <div class="modal-actions">
+      <button class="btn-reset" id="btnResetTargets">恢復預設值</button>
+      <button class="btn-save" id="btnSaveTargets">儲存</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ Footer ═══════ -->
-<div class="footer-note">點擊數字可以編輯 · 每週五更新一次</div>
+<div class="footer-note">點擊數字可以編輯 · 資料自動依週歸檔 · 儲存於瀏覽器</div>
 
 <script>
 const STORAGE_KEY = "insurance-tracker-v2";
 const STORAGE_KEY_OLD = "insurance-activity-tracker";
+const TARGETS_KEY = "insurance-tracker-targets";
+
+const DEFAULT_TARGETS = { contact: 20, meeting: 8, proposal: 3, closed: 10 };
 
 const METRICS = [
   { key: "contact", label: "接觸數", target: 20, unit: "人", icon: "◎", desc: "新舊客戶合計聯絡" },
@@ -362,6 +464,40 @@ const METRICS = [
 ];
 
 const emptyWeek = () => ({ contact: 0, meeting: 0, proposal: 0, closed: 0 });
+
+// ── Custom targets ──
+let customTargets = { ...DEFAULT_TARGETS };
+
+function loadTargets() {
+  try {
+    const raw = localStorage.getItem(TARGETS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        Object.keys(DEFAULT_TARGETS).forEach(k => {
+          if (typeof parsed[k] === "number" && parsed[k] > 0) customTargets[k] = parsed[k];
+        });
+      }
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function saveTargets() {
+  try {
+    localStorage.setItem(TARGETS_KEY, JSON.stringify(customTargets));
+  } catch (e) { /* ignore */ }
+}
+
+function getTarget(key) {
+  return customTargets[key] || DEFAULT_TARGETS[key];
+}
+
+function resetTargets() {
+  customTargets = { ...DEFAULT_TARGETS };
+  saveTargets();
+}
+
+loadTargets();
 
 // ── Date utilities ──
 function getWeekMonday(date) {
@@ -488,7 +624,7 @@ function getColor(rate) {
 function getRate(metricKey) {
   const m = METRICS.find(x => x.key === metricKey);
   const w = allWeeks[activeWeekKey] || emptyWeek();
-  return Math.min(100, Math.round((w[metricKey] / m.target) * 100));
+  return Math.min(100, Math.round((w[metricKey] / getTarget(m.key)) * 100));
 }
 
 function getFunnelRate(from, to) {
@@ -500,7 +636,7 @@ function getFunnelRate(from, to) {
 function calcScore(wk) {
   const w = wk || emptyWeek();
   return Math.round(
-    METRICS.reduce((sum, m) => sum + Math.min(100, (w[m.key] / m.target) * 100), 0) / METRICS.length
+    METRICS.reduce((sum, m) => sum + Math.min(100, (w[m.key] / getTarget(m.key)) * 100), 0) / METRICS.length
   );
 }
 
@@ -517,6 +653,59 @@ function canGoNext() {
 }
 
 // ── Render ──
+// ── Settings panel ──
+function renderSettingsForm() {
+  const container = document.getElementById("settingsForm");
+  let html = "";
+  METRICS.forEach(m => {
+    const val = getTarget(m.key);
+    html += `<div class="setting-row">
+      <span class="s-icon" style="color:#00e5a0">${m.icon}</span>
+      <span class="s-label">${m.label}</span>
+      <div class="s-target">
+        <input type="number" id="tgt_${m.key}" value="${val}" min="1">
+        <span class="s-unit">${m.unit}</span>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function openSettings() {
+  editingKey = null;
+  renderSettingsForm();
+  document.getElementById("settingsModal").style.display = "flex";
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").style.display = "none";
+}
+
+function saveSettings() {
+  METRICS.forEach(m => {
+    const inp = document.getElementById("tgt_" + m.key);
+    if (inp) {
+      const n = Math.max(1, parseInt(inp.value) || DEFAULT_TARGETS[m.key]);
+      customTargets[m.key] = n;
+    }
+  });
+  saveTargets();
+  closeSettings();
+  renderAll();
+}
+
+document.getElementById("btnSettings").addEventListener("click", openSettings);
+document.getElementById("btnModalClose").addEventListener("click", closeSettings);
+document.getElementById("btnSaveTargets").addEventListener("click", saveSettings);
+document.getElementById("btnResetTargets").addEventListener("click", () => {
+  resetTargets();
+  renderSettingsForm();
+  renderAll();
+});
+document.getElementById("settingsModal").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeSettings();
+});
+
 function renderWeekTabs() {
   const inner = document.getElementById("weekTabsInner");
   const current = getCurrentWeekKey();
@@ -577,7 +766,7 @@ function renderInputView() {
             </div>
             <div class="progress-labels">
               <span>0</span>
-              <span style="color:#555">目標 ${m.target}${m.unit}</span>
+              <span style="color:#555">目標 ${getTarget(m.key)}${m.unit}</span>
             </div>
           </div>
           <div class="card-value-area">
@@ -690,11 +879,11 @@ function renderTrendView() {
       <div class="trend-card-head">
         <span class="icon" style="color:#00e5a0;font-size:13px">${m.icon}</span>
         <span class="label">${m.label}</span>
-        <span class="target">目標 ${m.target}</span>
+        <span class="target">目標 ${getTarget(m.key)}</span>
       </div>
       <div class="trend-bars">`;
 
-    const maxVal = Math.max(...displayKeys.map(k => (allWeeks[k] || emptyWeek())[m.key]), m.target);
+    const maxVal = Math.max(...displayKeys.map(k => (allWeeks[k] || emptyWeek())[m.key]), getTarget(m.key));
 
     // Show oldest to newest (left to right)
     const ordered = [...displayKeys].reverse();
@@ -702,7 +891,7 @@ function renderTrendView() {
     ordered.forEach(key => {
       const w = allWeeks[key] || emptyWeek();
       const val = w[m.key];
-      const rate = Math.min(100, (val / m.target) * 100);
+      const rate = Math.min(100, (val / getTarget(m.key)) * 100);
       const color = getColor(rate);
       const barH = Math.max(4, (val / maxVal) * 70);
       const isCurrent = key === current;
