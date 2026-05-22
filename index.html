@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#007AFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="活動追蹤器">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>活動量追蹤器</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -990,6 +996,10 @@ if (!activeWeekKey || !allWeeks[activeWeekKey]) {
 weekOffset = 0;
 updateFooter();
 renderAll();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/activity-tracker/sw.js');
+}
 </script>
 
 </body>
