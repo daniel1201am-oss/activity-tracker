@@ -732,7 +732,8 @@ document.querySelectorAll('.page-tab').forEach(tab => {
     currentPage = page;
     document.getElementById('page-' + currentPage).classList.add('active');
     document.querySelector('.bottom-bar').style.display = currentPage === 'task' ? 'flex' : 'none';
-    if (currentPage === 'goals') renderGoalsPage();
+    if (currentPage === 'goals') { renderGoalsPage(); }
+    else { renderAll(); }
   });
 });
 
