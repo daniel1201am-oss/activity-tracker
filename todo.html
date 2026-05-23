@@ -428,7 +428,7 @@ function renderTaskList() {
 
   let html = '';
   if (highlighted.length > 0) {
-    html += '<div class="section-label">★ 今日重點</div><div class="task-list">';
+    html += '<div class="section-label">今日重點</div><div class="task-list">';
     html += sortSection(highlighted).map(renderCard).join('');
     html += '</div><div class="list-divider"></div>';
   }
