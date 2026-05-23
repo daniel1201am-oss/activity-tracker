@@ -708,9 +708,9 @@ function handleTouchEnd(e) {
     velSamples = [];
 
     // Project total displacement: gesture + inertia
-    const inertiaPx = velocity * 250;
+    const inertiaPx = velocity * 200;
     const totalDx = dx + inertiaPx;
-    let weekShift = Math.round(totalDx / w);
+    let weekShift = -Math.round(totalDx / w);
     weekShift = Math.max(-2, Math.min(2, weekShift));
 
     if (weekShift !== 0) {
@@ -721,9 +721,9 @@ function handleTouchEnd(e) {
     // Dynamic duration based on distance to travel
     const currentTx = getCurrentTx();
     const dist = Math.abs(baseX - currentTx);
-    const duration = Math.max(350, Math.min(900, dist * 0.8));
+    const duration = Math.max(400, Math.min(1100, dist * 1.5));
 
-    track.style.transition = `transform ${duration}ms cubic-bezier(0.2,0.8,0.3,1)`;
+    track.style.transition = `transform ${duration}ms cubic-bezier(0.25,0.7,0.35,1)`;
     track.style.transform = `translateX(${baseX}px)`;
 
     clearTimeout(animFrame);
