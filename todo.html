@@ -677,7 +677,7 @@ function handleTouchEnd(e) {
     tracking = false;
     if (!moved) return;
     const dx = e.changedTouches[0].clientX - startX;
-    wrap.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.25s ease';
+    wrap.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.5s ease';
     if (Math.abs(dx) > SWIPE_THRESHOLD) {
       const dir = dx > 0 ? 1 : -1;
       // Slide out
@@ -692,12 +692,12 @@ function handleTouchEnd(e) {
         wrap.style.opacity = '0';
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
-            wrap.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease';
+            wrap.style.transition = 'transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.6s ease';
             wrap.style.transform = 'translateX(0)';
             wrap.style.opacity = '1';
           });
         });
-      }, 250);
+      }, 500);
     } else {
       // Spring back
       wrap.style.transform = 'translateX(0)';
