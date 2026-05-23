@@ -94,7 +94,7 @@ body{
   font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;
   letter-spacing:.3px;white-space:nowrap
 }
-.tag-domain{background:#fff0e6;color:#cc5500}
+
 .tag-goal{background:#e6e6e6;color:#555}
 .tag-duration{background:#f2f2f7;color:#8e8e93}
 .tag-carried{background:#e8edf3;color:#334155;font-style:italic}
@@ -138,16 +138,26 @@ body{
 }
 .goals-section h3{font-size:13px;font-weight:700;margin-bottom:4px}
 .goals-section .sub{font-size:10px;color:#8e8e93;margin-bottom:14px}
-.goal-item,.domain-item{
-  display:flex;align-items:center;justify-content:space-between;
+.goal-item{
+  display:flex;align-items:center;justify-content:space-between;gap:4px;
   padding:10px 12px;background:#f9f9fc;border-radius:10px;margin-bottom:6px;font-size:14px
 }
 .goal-item .meta{font-size:10px;color:#8e8e93}
+.goal-item .goal-name{flex:1}
+.goal-edit-input{
+  flex:1;padding:4px 8px;border-radius:8px;border:2px solid #ff6b00;
+  font-size:14px;font-family:inherit;background:#fff;outline:none
+}
 .btn-del-sm{
   width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;background:transparent;
   font-size:14px;color:#d1d1d6;display:flex;align-items:center;justify-content:center;transition:all .15s
 }
 .btn-del-sm:hover{color:#ff3b30;background:#fff0f0}
+.btn-edit-sm{
+  width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;background:transparent;
+  font-size:14px;color:#d1d1d6;display:flex;align-items:center;justify-content:center;transition:all .15s
+}
+.btn-edit-sm:hover{color:#ff6b00;background:#fff0e6}
 .add-row{display:flex;gap:8px;margin-top:8px;align-items:center}
 .add-row input{
   flex:1;padding:10px 14px;border:2px solid transparent;border-radius:12px;
@@ -235,20 +245,21 @@ function loadTasks() {
 function saveTasks(data) { localStorage.setItem(LS_TASKS, JSON.stringify(data)); }
 
 function loadSettings() {
-  try { return JSON.parse(localStorage.getItem(LS_SETTINGS)) || getDefaultSettings(); }
-  catch { return getDefaultSettings(); }
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_SETTINGS)) || getDefaultSettings();
+    // Migrate old goal format {name, domain} → string
+    if (raw.goals && raw.goals.length && typeof raw.goals[0] === 'object') {
+      raw.goals = raw.goals.map(g => typeof g === 'string' ? g : g.name);
+    }
+    raw.domains = undefined;
+    return raw;
+  } catch { return getDefaultSettings(); }
 }
 function saveSettings(data) { localStorage.setItem(LS_SETTINGS, JSON.stringify(data)); }
 
 function getDefaultSettings() {
   return {
-    domains: ['工作', '健康', '學習', '財務', '家庭', '人際'],
-    goals: [
-      { name: '晉升區域經理', domain: '工作' },
-      { name: '體脂降到15%', domain: '健康' },
-      { name: '每月讀兩本書', domain: '學習' },
-      { name: '每月儲蓄30%', domain: '財務' }
-    ]
+    goals: ['晉升區域經理', '體脂降到15%', '每月讀兩本書', '每月儲蓄30%']
   };
 }
 
@@ -387,7 +398,6 @@ function renderTaskList() {
   const renderCard = t => {
     const tags = [];
     if (t.isCarriedOver) tags.push('<span class="tag tag-carried">從昨日延續</span>');
-    if (t.domain) tags.push(`<span class="tag tag-domain">${esc(t.domain)}</span>`);
     if (t.goal) tags.push(`<span class="tag tag-goal">${esc(t.goal)}</span>`);
     if (t.estimatedMinutes) tags.push(`<span class="tag tag-duration">${t.estimatedMinutes}分鐘</span>`);
     if (tags.length === 0) tags.push('<span class="tag-empty">點擊展開屬性</span>');
@@ -399,8 +409,7 @@ function renderTaskList() {
         <div class="task-tags">${tags.join('')}</div>
         <div class="task-expand">
           <div class="expand-row">
-            <select data-field="domain"><option value="">選擇領域...</option>${settings.domains.map(d => `<option ${t.domain===d?'selected':''}>${esc(d)}</option>`).join('')}</select>
-            <select data-field="goal"><option value="">選擇目標...</option>${settings.goals.map(g => `<option ${t.goal===g.name?'selected':''}>${esc(g.name)}</option>`).join('')}</select>
+            <select data-field="goal"><option value="">選擇目標...</option>${settings.goals.map(g => `<option ${t.goal===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
           </div>
           <div class="expand-row">
             <input type="number" data-field="minutes" placeholder="預估分鐘" value="${t.estimatedMinutes||''}" min="1" max="480">
@@ -459,69 +468,59 @@ function renderGoalsPage() {
   const container = document.getElementById('goals-content');
   container.innerHTML = `
     <div class="goals-section">
-      <h3>生活領域</h3>
-      <div class="sub">管理你生活中的各個領域分類</div>
-      ${settings.domains.map(d => `
-        <div class="domain-item">
-          <span>${esc(d)}</span>
-          <button class="btn-del-sm" data-action="del-domain" data-name="${esc(d)}">✕</button>
-        </div>
-      `).join('')}
-      <div class="add-row">
-        <input id="new-domain-input" placeholder="新增領域...">
-        <button class="btn-add-sm" id="btn-add-domain">+ 新增</button>
-      </div>
-    </div>
-    <div class="goals-section">
       <h3>目標管理</h3>
-      <div class="sub">設定你想達成的目標，可關聯到特定領域</div>
+      <div class="sub">設定你想達成的目標</div>
       ${settings.goals.map(g => `
-        <div class="goal-item">
-          <span>${esc(g.name)} <span class="meta">${esc(g.domain||'不限')}</span></span>
-          <button class="btn-del-sm" data-action="del-goal" data-name="${esc(g.name)}">✕</button>
+        <div class="goal-item" data-name="${esc(g)}">
+          <span class="goal-name">${esc(g)}</span>
+          <input class="goal-edit-input" style="display:none" value="${esc(g)}">
+          <button class="btn-edit-sm" data-action="edit-goal">✎</button>
+          <button class="btn-del-sm" data-action="del-goal">✕</button>
         </div>
       `).join('')}
       <div class="add-row">
         <input id="new-goal-name" placeholder="新增目標名稱...">
-        <select id="new-goal-domain">
-          <option value="">不限領域</option>
-          ${settings.domains.map(d => `<option>${esc(d)}</option>`).join('')}
-        </select>
         <button class="btn-add-sm" id="btn-add-goal">+ 新增</button>
       </div>
     </div>`;
 
-  container.querySelectorAll('[data-action="del-domain"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const name = btn.dataset.name;
-      settings.domains = settings.domains.filter(d => d !== name);
-      saveSettings(settings);
-      showToast(`已刪除領域「${name}」`);
-      renderAll();
-    });
-  });
+  // Delete goal
   container.querySelectorAll('[data-action="del-goal"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const name = btn.dataset.name;
-      settings.goals = settings.goals.filter(g => g.name !== name);
+      const name = btn.closest('.goal-item').dataset.name;
+      settings.goals = settings.goals.filter(g => g !== name);
       saveSettings(settings);
       showToast(`已刪除目標「${name}」`);
       renderAll();
     });
   });
 
-  const btnDomain = document.getElementById('btn-add-domain');
-  const inpDomain = document.getElementById('new-domain-input');
-  if (btnDomain) {
-    btnDomain.addEventListener('click', () => addDomain(inpDomain));
-    inpDomain.addEventListener('keydown', e => { if (e.key==='Enter') addDomain(inpDomain); });
-  }
+  // Edit goal — switch to inline input
+  container.querySelectorAll('[data-action="edit-goal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.goal-item');
+      const oldName = item.dataset.name;
+      const span = item.querySelector('.goal-name');
+      const inp = item.querySelector('.goal-edit-input');
+      span.style.display = 'none';
+      inp.style.display = '';
+      inp.focus();
+      inp.select();
+      const commit = () => {
+        const newName = inp.value;
+        renameGoal(oldName, newName);
+      };
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { commit(); } });
+      inp.addEventListener('blur', () => { commit(); }, {once:true});
+    });
+  });
+
+  // Add goal
   const btnGoal = document.getElementById('btn-add-goal');
   const inpGoal = document.getElementById('new-goal-name');
-  const selGoal = document.getElementById('new-goal-domain');
   if (btnGoal) {
-    btnGoal.addEventListener('click', () => addGoal(inpGoal, selGoal));
-    inpGoal.addEventListener('keydown', e => { if (e.key==='Enter') addGoal(inpGoal, selGoal); });
+    btnGoal.addEventListener('click', () => addGoal(inpGoal));
+    inpGoal.addEventListener('keydown', e => { if (e.key==='Enter') addGoal(inpGoal); });
   }
 }
 
@@ -582,32 +581,39 @@ function updateTaskFields(id) {
   if (!t) return;
   const card = document.querySelector(`[data-id="${id}"]`);
   if (!card) return;
-  const domain = card.querySelector('[data-field="domain"]')?.value || null;
   const goal = card.querySelector('[data-field="goal"]')?.value || null;
   const min = parseInt(card.querySelector('[data-field="minutes"]')?.value) || null;
-  t.domain = domain; t.goal = goal; t.estimatedMinutes = min;
+  t.goal = goal; t.estimatedMinutes = min;
   saveTasks(allTasks);
   renderAll();
 }
 
 /* ── GOALS ACTIONS ── */
-function addDomain(input) {
+function addGoal(input) {
   const name = input.value.trim();
   if (!name) return;
-  if (settings.domains.includes(name)) { showToast('領域已存在'); return; }
-  settings.domains.push(name);
+  if (settings.goals.includes(name)) { showToast('目標已存在'); return; }
+  settings.goals.push(name);
   saveSettings(settings);
   input.value = '';
   renderAll();
 }
-function addGoal(nameInp, sel) {
-  const name = nameInp.value.trim();
-  if (!name) return;
-  if (settings.goals.some(g => g.name === name)) { showToast('目標已存在'); return; }
-  settings.goals.push({ name, domain: sel.value || null });
+function renameGoal(oldName, newName) {
+  newName = newName.trim();
+  if (!newName || newName === oldName) return;
+  if (settings.goals.includes(newName)) { showToast('目標已存在'); return; }
+  const idx = settings.goals.indexOf(oldName);
+  if (idx !== -1) settings.goals[idx] = newName;
   saveSettings(settings);
-  nameInp.value = '';
+  // Update all tasks referencing the old goal name
+  for (const dk of Object.keys(allTasks)) {
+    for (const t of (allTasks[dk] || [])) {
+      if (t.goal === oldName) t.goal = newName;
+    }
+  }
+  saveTasks(allTasks);
   renderAll();
+  showToast(`已更新目標「${newName}」`);
 }
 
 /* ── DRAG & DROP ── */
