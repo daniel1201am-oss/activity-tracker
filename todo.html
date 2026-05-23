@@ -356,14 +356,13 @@ function renderWeekStrip(animateIn) {
   const track = document.getElementById('week-track');
   const wrap = document.getElementById('week-strip-wrap');
   const w = wrap.offsetWidth;
-  track.innerHTML = renderOneWeek(weekOffset - 1) + renderOneWeek(weekOffset) + renderOneWeek(weekOffset + 1);
+  track.innerHTML = renderOneWeek(weekOffset - 2) + renderOneWeek(weekOffset - 1) + renderOneWeek(weekOffset) + renderOneWeek(weekOffset + 1) + renderOneWeek(weekOffset + 2);
 
-  // Set explicit widths so 3 strips fill exactly 3x the wrap width
-  track.style.width = (w * 3) + 'px';
+  track.style.width = (w * 5) + 'px';
   track.querySelectorAll('.week-strip').forEach(s => { s.style.width = w + 'px'; });
 
-  // Position to show current week
-  track.style.transform = `translateX(${-w}px)`;
+  // Center strip (current week) is the 3rd of 5, at offset -2*w
+  track.style.transform = `translateX(${-2 * w}px)`;
 
   // Bind day button clicks
   track.querySelectorAll('.day-btn').forEach(btn => {
@@ -674,48 +673,85 @@ function handleTouchEnd(e) {
   touchCard = null;
 }
 
-/* ── SWIPE WEEK ── */
+/* ── SWIPE WEEK (momentum) ── */
 (function bindSwipe() {
   const wrap = document.getElementById('week-strip-wrap');
   const track = document.getElementById('week-track');
   if (!wrap || !track) return;
-  let startX = 0, baseX = 0, tracking = false;
-  const THRESHOLD = 50;
+  let startX = 0, baseX = 0, tracking = false, animFrame = 0;
+  let velSamples = []; // [{t, x}]
 
-  function getBaseX() { return -wrap.offsetWidth; }
+  function getCenter() { return -2 * wrap.offsetWidth; }
+
+  function getCurrentTx() {
+    const m = getComputedStyle(track).transform;
+    if (!m || m === 'none') return getCenter();
+    const nums = m.match(/matrix\(([^)]+)\)/);
+    if (!nums) return getCenter();
+    return parseFloat(nums[1].split(',')[4]);
+  }
 
   function commitSwipe(e) {
     if (!tracking) return;
     tracking = false;
+    const w = wrap.offsetWidth;
     const dx = e.changedTouches[0].clientX - startX;
-    if (Math.abs(dx) > THRESHOLD) {
-      const dir = dx > 0 ? -1 : 1;
-      weekOffset += dir;
-      baseX = baseX - dir * wrap.offsetWidth;
-      track.style.transition = 'transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1)';
-      track.style.transform = `translateX(${baseX}px)`;
-      setTimeout(() => {
-        track.style.transition = 'none';
-        renderAll();
-      }, 700);
-    } else {
-      track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
-      track.style.transform = `translateX(${baseX}px)`;
+
+    // Calculate velocity from recent samples (px/ms)
+    let velocity = 0;
+    if (velSamples.length >= 2) {
+      const first = velSamples[0];
+      const last = velSamples[velSamples.length - 1];
+      const dt = last.t - first.t;
+      if (dt > 0) velocity = (last.x - first.x) / dt;
     }
+    velSamples = [];
+
+    // Project total displacement: gesture + inertia
+    const inertiaPx = velocity * 250;
+    const totalDx = dx + inertiaPx;
+    let weekShift = Math.round(totalDx / w);
+    weekShift = Math.max(-2, Math.min(2, weekShift));
+
+    if (weekShift !== 0) {
+      weekOffset += weekShift;
+      baseX = baseX - weekShift * w;
+    }
+
+    // Dynamic duration based on distance to travel
+    const currentTx = getCurrentTx();
+    const dist = Math.abs(baseX - currentTx);
+    const duration = Math.max(350, Math.min(900, dist * 0.8));
+
+    track.style.transition = `transform ${duration}ms cubic-bezier(0.2,0.8,0.3,1)`;
+    track.style.transform = `translateX(${baseX}px)`;
+
+    clearTimeout(animFrame);
+    animFrame = setTimeout(() => {
+      track.style.transition = 'none';
+      renderAll();
+    }, duration);
   }
 
   wrap.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    baseX = getBaseX();
-    tracking = true;
+    // Interrupt any running animation — grab current position
     track.style.transition = 'none';
+    baseX = getCurrentTx();
+    startX = e.touches[0].clientX;
+    tracking = true;
+    velSamples = [{t: Date.now(), x: startX}];
   }, {passive:true});
 
   document.addEventListener('touchmove', e => {
     if (!tracking) return;
-    const dx = e.touches[0].clientX - startX;
+    const now = Date.now();
+    const x = e.touches[0].clientX;
+    velSamples.push({t: now, x});
+    // Keep last 50ms of samples
+    while (velSamples.length > 1 && now - velSamples[0].t > 50) velSamples.shift();
+    const dx = x - startX;
     const w = wrap.offsetWidth;
-    const tx = Math.max(-2*w, Math.min(0, baseX + dx));
+    const tx = Math.max(-4*w, Math.min(0, baseX + dx));
     track.style.transform = `translateX(${tx}px)`;
   }, {passive:true});
 
