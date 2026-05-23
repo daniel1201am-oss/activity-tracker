@@ -684,7 +684,7 @@ function handleTouchEnd(e) {
     track.style.transition = 'none';
   }, {passive:true});
 
-  wrap.addEventListener('touchmove', e => {
+  document.addEventListener('touchmove', e => {
     if (!tracking) return;
     const dx = e.touches[0].clientX - startX;
     if (Math.abs(dx) > 10) moved = true;
@@ -693,7 +693,8 @@ function handleTouchEnd(e) {
     track.style.transform = `translateX(${tx}px)`;
   }, {passive:true});
 
-  wrap.addEventListener('touchend', e => {
+  document.addEventListener('touchend', e => {
+    if (!tracking) return;
     tracking = false;
     if (!moved) return;
     const dx = e.changedTouches[0].clientX - startX;
@@ -711,7 +712,7 @@ function handleTouchEnd(e) {
       track.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1)';
       track.style.transform = `translateX(${baseX}px)`;
     }
-  });
+  }, {passive:true});
 })();
 
 /* ── PAGE SWITCHING ── */
