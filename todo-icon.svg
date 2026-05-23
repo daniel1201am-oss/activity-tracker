@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="clip">
+      <rect width="512" height="512" rx="120" ry="120"/>
+    </clipPath>
+    <linearGradient id="gloss" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.14"/>
+      <stop offset="35%" stop-color="#fff" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="checkGloss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffa04d"/>
+      <stop offset="40%" stop-color="#ff6b00"/>
+      <stop offset="100%" stop-color="#cc5500"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect width="512" height="512" fill="#1c1c1e"/>
+    <rect width="512" height="512" fill="url(#gloss)"/>
+    <ellipse cx="180" cy="70" rx="260" ry="150" fill="#fff" opacity="0.08"/>
+  </g>
+  <!-- 勾號陰影 -->
+  <polyline points="105,286 235,390 410,140"
+    fill="none" stroke="#000" stroke-width="80"
+    stroke-linecap="square" stroke-linejoin="round" opacity="0.35"/>
+  <!-- 勾號本體 -->
+  <polyline points="100,280 230,384 405,134"
+    fill="none" stroke="url(#checkGloss)" stroke-width="80"
+    stroke-linecap="square" stroke-linejoin="round"/>
+</svg>
