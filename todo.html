@@ -21,6 +21,7 @@ body{
   font-family:'Inter','Noto Sans TC',-apple-system,'SF Pro Text','PingFang TC',sans-serif;
   -webkit-tap-highlight-color:transparent;padding-bottom:100px;user-select:none;
   overflow-x:hidden;
+  overscroll-behavior-x:none;
 }
 .topbar{
   padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
@@ -38,7 +39,7 @@ body{
 .page{display:none}
 .page.active{display:block}
 
-.week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px;overflow:hidden}
+.week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px;overflow:hidden;touch-action:pan-y}
 .week-strip{display:flex;gap:4px;justify-content:center}
 .day-btn{
   flex:1;max-width:48px;padding:6px 2px;border:none;border-radius:14px;
