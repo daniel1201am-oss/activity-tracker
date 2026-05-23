@@ -20,7 +20,7 @@ body{
   min-height:100vh;background:#f2f2f7;color:#1c1c1e;
   font-family:'Inter','Noto Sans TC',-apple-system,'SF Pro Text','PingFang TC',sans-serif;
   -webkit-tap-highlight-color:transparent;padding-bottom:100px;user-select:none;
-  overflow-x:hidden;
+  overflow-x:hidden;touch-action:manipulation;
   overscroll-behavior-x:none;
 }
 .topbar{
@@ -688,7 +688,9 @@ function handleTouchEnd(e) {
     if (!tracking) return;
     const dx = e.touches[0].clientX - startX;
     if (Math.abs(dx) > 10) moved = true;
-    track.style.transform = `translateX(${baseX + dx}px)`;
+    const w = wrap.offsetWidth;
+    const tx = Math.max(-2*w, Math.min(0, baseX + dx));
+    track.style.transform = `translateX(${tx}px)`;
   }, {passive:true});
 
   wrap.addEventListener('touchend', e => {
