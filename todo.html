@@ -41,7 +41,7 @@ body{
 
 .week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px;overflow:hidden;touch-action:pan-y;position:relative}
 .week-track{display:flex;gap:0;will-change:transform;transition:none}
-.week-strip{display:flex;gap:4px;justify-content:center;flex:1 0 100%;min-width:100%}
+.week-strip{display:flex;gap:4px;justify-content:center;flex-shrink:0}
 .day-btn{
   flex:1;max-width:48px;padding:6px 2px;border:none;border-radius:14px;
   cursor:pointer;background:transparent;font-family:inherit;text-align:center;transition:all .2s
@@ -342,25 +342,22 @@ function renderOneWeek(offset) {
 
 function renderWeekStrip(animateIn) {
   const track = document.getElementById('week-track');
+  const wrap = document.getElementById('week-strip-wrap');
+  const w = wrap.offsetWidth;
   track.innerHTML = renderOneWeek(weekOffset - 1) + renderOneWeek(weekOffset) + renderOneWeek(weekOffset + 1);
 
-  // Position to show current week
-  const wrap = document.getElementById('week-strip-wrap');
-  const wrapW = wrap.offsetWidth;
-  track.style.transform = `translateX(${-wrapW}px)`;
+  // Set explicit widths so 3 strips fill exactly 3x the wrap width
+  track.style.width = (w * 3) + 'px';
+  track.querySelectorAll('.week-strip').forEach(s => { s.style.width = w + 'px'; });
 
-  if (animateIn) {
-    track.style.transition = 'transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1)';
-    track.style.transform = `translateX(${-wrapW}px)`;
-    setTimeout(() => { track.style.transition = 'none'; }, 700);
-  }
+  // Position to show current week
+  track.style.transform = `translateX(${-w}px)`;
 
   // Bind day button clicks
   track.querySelectorAll('.day-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const dk = btn.dataset.date;
       activeDate = dk;
-      // Check which week this date belongs to and adjust weekOffset
       const targetWeekOffset = parseInt(btn.closest('.week-strip').dataset.offset);
       weekOffset = targetWeekOffset;
       renderAll();
