@@ -356,13 +356,18 @@ function renderWeekStrip(animateIn) {
   const track = document.getElementById('week-track');
   const wrap = document.getElementById('week-strip-wrap');
   const w = wrap.offsetWidth;
-  track.innerHTML = renderOneWeek(weekOffset - 2) + renderOneWeek(weekOffset - 1) + renderOneWeek(weekOffset) + renderOneWeek(weekOffset + 1) + renderOneWeek(weekOffset + 2);
+  const TOTAL = 20, HALF = 10;
+  let html = '';
+  for (let i = -HALF; i < TOTAL - HALF; i++) {
+    html += renderOneWeek(weekOffset + i);
+  }
+  track.innerHTML = html;
 
-  track.style.width = (w * 5) + 'px';
+  track.style.width = (w * TOTAL) + 'px';
   track.querySelectorAll('.week-strip').forEach(s => { s.style.width = w + 'px'; });
 
-  // Center strip (current week) is the 3rd of 5, at offset -2*w
-  track.style.transform = `translateX(${-2 * w}px)`;
+  // Center strip (current week) is at index HALF, offset -HALF*w
+  track.style.transform = `translateX(${-HALF * w}px)`;
 
   // Bind day button clicks
   track.querySelectorAll('.day-btn').forEach(btn => {
@@ -678,10 +683,11 @@ function handleTouchEnd(e) {
   const wrap = document.getElementById('week-strip-wrap');
   const track = document.getElementById('week-track');
   if (!wrap || !track) return;
+  const TOTAL = 20, HALF = 10;
   let startX = 0, baseX = 0, tracking = false, animFrame = 0;
   let velSamples = []; // [{t, x}]
 
-  function getCenter() { return -2 * wrap.offsetWidth; }
+  function getCenter() { return -HALF * wrap.offsetWidth; }
 
   function getCurrentTx() {
     const m = getComputedStyle(track).transform;
@@ -711,7 +717,7 @@ function handleTouchEnd(e) {
     const inertiaPx = velocity * 200;
     const totalDx = dx + inertiaPx;
     let weekShift = -Math.round(totalDx / w);
-    weekShift = Math.max(-2, Math.min(2, weekShift));
+    weekShift = Math.max(-(HALF-1), Math.min(HALF-1, weekShift));
 
     if (weekShift !== 0) {
       weekOffset += weekShift;
@@ -751,7 +757,7 @@ function handleTouchEnd(e) {
     while (velSamples.length > 1 && now - velSamples[0].t > 50) velSamples.shift();
     const dx = x - startX;
     const w = wrap.offsetWidth;
-    const tx = Math.max(-4*w, Math.min(0, baseX + dx));
+    const tx = Math.max(-(TOTAL-1)*w, Math.min(0, baseX + dx));
     track.style.transform = `translateX(${tx}px)`;
   }, {passive:true});
 
