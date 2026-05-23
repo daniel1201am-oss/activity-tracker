@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="時間管理">
+<link rel="manifest" href="todo-manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<title>每日時間管理</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100vh;background:#f2f2f7;color:#1c1c1e;
+  font-family:'Inter','Noto Sans TC',-apple-system,'SF Pro Text','PingFang TC',sans-serif;
+  -webkit-tap-highlight-color:transparent;padding-bottom:100px;user-select:none;
+  overflow-x:hidden;
+}
+.topbar{
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+  background:#fff;border-bottom:1px solid #e5e5ea;
+}
+.topbar-brand div:first-child{font-size:10px;letter-spacing:3px;color:#8e8e93;margin-bottom:2px}
+.topbar-brand div:last-child{font-size:17px;font-weight:700}
+.page-tabs{display:flex;background:#fff;border-bottom:1px solid #e5e5ea;padding:0 18px}
+.page-tab{
+  padding:10px 20px;border:none;cursor:pointer;background:transparent;
+  font-size:13px;font-weight:500;font-family:inherit;color:#8e8e93;
+  border-bottom:2px solid transparent;transition:all .2s
+}
+.page-tab.active{color:#1c1c1e;border-bottom-color:#ff6b00}
+.page{display:none}
+.page.active{display:block}
+
+.week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px}
+.week-strip{display:flex;gap:4px;justify-content:center}
+.day-btn{
+  flex:1;max-width:48px;padding:6px 2px;border:none;border-radius:14px;
+  cursor:pointer;background:transparent;font-family:inherit;text-align:center;transition:all .2s
+}
+.day-btn .day-name{display:block;font-size:9px;color:#8e8e93;margin-bottom:2px;letter-spacing:.5px}
+.day-btn .day-month{display:block;font-size:9px;color:#8e8e93;line-height:1}
+.day-btn .day-num{display:block;font-size:16px;font-weight:600;color:#1c1c1e}
+.day-btn.today{background:#ff6b00}
+.day-btn.today .day-name,.day-btn.today .day-month{color:rgba(0,0,0,.7)}
+.day-btn.today .day-num{color:#000}
+.day-btn.selected:not(.today){background:#1c1c1e}
+.day-btn.selected:not(.today) .day-num{color:#fff}
+.day-btn.selected:not(.today) .day-name,.day-btn.selected:not(.today) .day-month{color:#8e8e93}
+.hl-dot{width:5px;height:5px;border-radius:50%;background:#334155;margin:2px auto 0;display:none}
+.day-btn.has-highlight .hl-dot{display:block}
+
+.section-label{
+  padding:10px 18px 4px;font-size:10px;letter-spacing:2px;color:#8e8e93;
+  display:flex;align-items:center;gap:6px
+}
+.section-label::after{content:'';flex:1;height:1px;background:#e5e5ea}
+.task-list{padding:0 18px}
+
+.task-card{
+  background:#fff;border-radius:14px;padding:12px 12px 10px;margin-bottom:8px;
+  box-shadow:0 1px 3px rgba(0,0,0,.05);display:flex;align-items:flex-start;gap:8px;
+  transition:all .2s;position:relative
+}
+.task-card:active{transform:scale(.98)}
+.task-card.highlighted{
+  border-left:4px solid #334155;background:#f5f6f8;
+  box-shadow:0 2px 8px rgba(51,65,85,.10)
+}
+.task-card.highlighted .task-title{font-weight:700}
+.task-card.done{opacity:.45}
+.task-card.done .task-title{text-decoration:line-through}
+.task-card.dragging{opacity:.5;transform:scale(.98)}
+.task-card.drag-over{border-top:3px solid #ff6b00}
+
+.task-check{
+  width:22px;height:22px;border-radius:50%;border:2px solid #d1d1d6;
+  flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:transparent;transition:all .2s;margin-top:1px;background:transparent
+}
+.task-check.done{background:#ff6b00;border-color:#ff6b00;color:#000}
+.task-body{flex:1;min-width:0}
+.task-title{font-size:15px;line-height:1.4;word-break:break-word;margin-bottom:6px}
+.task-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.tag{
+  font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;
+  letter-spacing:.3px;white-space:nowrap
+}
+.tag-domain{background:#fff0e6;color:#cc5500}
+.tag-goal{background:#e6e6e6;color:#555}
+.tag-duration{background:#f2f2f7;color:#8e8e93}
+.tag-carried{background:#e8edf3;color:#334155;font-style:italic}
+.tag-empty{font-size:10px;color:#aeaeb2;font-style:italic}
+
+.btn-star{
+  width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;background:transparent;
+  font-size:17px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:transform .15s
+}
+.btn-star:hover{transform:scale(1.2)}
+.btn-star.on{color:#334155}
+.btn-star.off{color:#d1d1d6}
+
+.btn-delete{
+  width:24px;height:24px;border-radius:50%;border:none;cursor:pointer;background:transparent;
+  font-size:14px;color:#d1d1d6;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;margin-top:1px
+}
+.btn-delete:hover{color:#ff3b30;background:#fff0f0}
+
+.list-divider{height:1px;background:#e5e5ea;margin:4px 18px 10px}
+
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5ea;
+  padding:10px 18px;display:flex;gap:8px;
+  box-shadow:0 -1px 6px rgba(0,0,0,.04);z-index:10
+}
+.bottom-bar input{
+  flex:1;padding:12px 16px;border:2px solid transparent;border-radius:14px;
+  background:#f2f2f7;font-size:15px;font-family:inherit;outline:none;transition:border .2s
+}
+.bottom-bar input:focus{border-color:#ff6b00}
+.btn-add{
+  width:46px;height:46px;border-radius:14px;border:none;cursor:pointer;
+  background:#1c1c1e;color:#fff;font-size:22px;font-weight:300;transition:background .2s;flex-shrink:0
+}
+.btn-add:hover{background:#ff6b00}
+
+.goals-section{
+  background:#fff;border-radius:16px;padding:18px;margin:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)
+}
+.goals-section h3{font-size:13px;font-weight:700;margin-bottom:4px}
+.goals-section .sub{font-size:10px;color:#8e8e93;margin-bottom:14px}
+.goal-item,.domain-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:#f9f9fc;border-radius:10px;margin-bottom:6px;font-size:14px
+}
+.goal-item .meta{font-size:10px;color:#8e8e93}
+.btn-del-sm{
+  width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;background:transparent;
+  font-size:14px;color:#d1d1d6;display:flex;align-items:center;justify-content:center;transition:all .15s
+}
+.btn-del-sm:hover{color:#ff3b30;background:#fff0f0}
+.add-row{display:flex;gap:8px;margin-top:8px}
+.add-row input{
+  flex:1;padding:10px 14px;border:2px solid transparent;border-radius:12px;
+  background:#f2f2f7;font-size:14px;font-family:inherit;outline:none;transition:border .2s
+}
+.add-row input:focus,.add-row select:focus{border-color:#ff6b00}
+.add-row select{
+  padding:10px;border-radius:12px;border:2px solid transparent;
+  background:#f2f2f7;font-size:12px;font-family:inherit;outline:none
+}
+.btn-add-sm{
+  padding:10px 16px;border-radius:12px;border:none;cursor:pointer;
+  background:#1c1c1e;color:#fff;font-size:13px;font-family:inherit;font-weight:500;
+  white-space:nowrap;transition:background .2s
+}
+.btn-add-sm:hover{background:#ff6b00}
+
+.task-expand{display:none;margin-top:10px;padding-top:10px;border-top:1px solid #f2f2f7}
+.task-card.expanded .task-expand{display:block}
+.expand-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.expand-row select,.expand-row input{
+  padding:8px 10px;border-radius:10px;border:1px solid #e5e5ea;
+  background:#f9f9fc;font-size:12px;font-family:inherit;outline:none
+}
+.expand-row select:focus,.expand-row input:focus{border-color:#ff6b00}
+.expand-row input[type=number]{width:70px}
+.expand-row select{flex:1;min-width:100px}
+
+.empty-state{text-align:center;padding:50px 20px;color:#aeaeb2}
+.empty-state .icon{font-size:40px;margin-bottom:10px}
+.empty-state .msg{font-size:13px;line-height:1.7}
+
+.toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  background:#1c1c1e;color:#fff;padding:10px 20px;border-radius:20px;
+  font-size:13px;font-weight:500;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none
+}
+.toast.show{opacity:1}
+.toast.fade{opacity:0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div>TIME MANAGEMENT</div>
+    <div>每日時間管理</div>
+  </div>
+</div>
+
+<div class="page-tabs">
+  <button class="page-tab active" data-page="task">任務</button>
+  <button class="page-tab" data-page="goals">目標</button>
+</div>
+
+<!-- TASK PAGE -->
+<div class="page active" id="page-task">
+  <div class="week-strip-wrap">
+    <div class="week-strip" id="week-strip"></div>
+  </div>
+  <div id="task-content"></div>
+</div>
+
+<!-- GOALS PAGE -->
+<div class="page" id="page-goals">
+  <div id="goals-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="bottom-bar">
+  <input id="task-input" placeholder="新增任務..." autocomplete="off">
+  <button class="btn-add" id="btn-add">+</button>
+</div>
+
+<script>
+/* ── DATA LAYER ── */
+const LS_TASKS = 'daily-tasks';
+const LS_SETTINGS = 'daily-settings';
+
+function loadTasks() {
+  try { return JSON.parse(localStorage.getItem(LS_TASKS)) || {}; }
+  catch { return {}; }
+}
+function saveTasks(data) { localStorage.setItem(LS_TASKS, JSON.stringify(data)); }
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem(LS_SETTINGS)) || getDefaultSettings(); }
+  catch { return getDefaultSettings(); }
+}
+function saveSettings(data) { localStorage.setItem(LS_SETTINGS, JSON.stringify(data)); }
+
+function getDefaultSettings() {
+  return {
+    domains: ['工作', '健康', '學習', '財務', '家庭', '人際'],
+    goals: [
+      { name: '晉升區域經理', domain: '工作' },
+      { name: '體脂降到15%', domain: '健康' },
+      { name: '每月讀兩本書', domain: '學習' },
+      { name: '每月儲蓄30%', domain: '財務' }
+    ]
+  };
+}
+
+/* ── STATE ── */
+let allTasks = loadTasks();
+let settings = loadSettings();
+let activeDate = getToday();
+let weekOffset = 0;
+let currentPage = 'task';
+let longPressTimer = null;
+let isDragging = false;
+
+function getToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function getWeekMonday(offset) {
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - day + 1 + offset * 7);
+  return monday;
+}
+
+function getWeekDays(offset) {
+  const mon = getWeekMonday(offset);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+function dateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function getTasks(date) {
+  return allTasks[date] || [];
+}
+
+function setTasks(date, tasks) {
+  allTasks[date] = tasks;
+  saveTasks(allTasks);
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ── CARRY OVER ── */
+function carryOver(date) {
+  if (allTasks[date] && allTasks[date].length > 0) return;
+  const yesterday = new Date(date);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = dateKey(yesterday);
+  const yTasks = allTasks[yesterdayKey] || [];
+  const undone = yTasks.filter(t => !t.isDone);
+  if (undone.length === 0) return;
+  const carried = undone.map(t => ({
+    ...t, id: genId(), isHighlighted: false, isDone: false, isCarriedOver: true, createdAt: date
+  }));
+  allTasks[date] = carried;
+  saveTasks(allTasks);
+}
+
+/* ── RENDER ── */
+function renderWeekStrip() {
+  const strip = document.getElementById('week-strip');
+  const days = getWeekDays(weekOffset);
+  const today = getToday();
+  const dayNames = ['一','二','三','四','五','六','日'];
+
+  strip.innerHTML = days.map(d => {
+    const dk = dateKey(d);
+    const tasks = allTasks[dk] || [];
+    const hasHL = tasks.some(t => t.isHighlighted);
+    const isToday = dk === today;
+    const isSelected = dk === activeDate;
+    let cls = 'day-btn';
+    if (isToday) cls += ' today';
+    else if (isSelected) cls += ' selected';
+    if (hasHL) cls += ' has-highlight';
+    return `<button class="${cls}" data-date="${dk}">
+      <span class="day-name">${dayNames[d.getDay()===0?6:d.getDay()-1]}</span>
+      <span class="day-month">${d.getMonth()+1}</span>
+      <span class="day-num">${d.getDate()}</span>
+      <div class="hl-dot"></div>
+    </button>`;
+  }).join('');
+
+  strip.querySelectorAll('.day-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeDate = btn.dataset.date;
+      weekOffset = 0;
+      renderAll();
+    });
+  });
+}
+
+function renderTaskList() {
+  const container = document.getElementById('task-content');
+  carryOver(activeDate);
+  let tasks = getTasks(activeDate);
+
+  if (tasks.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="icon">📋</div>
+      <div class="msg">還沒有任務<br>在下方輸入框新增今天的第一個任務吧</div>
+    </div>`;
+    return;
+  }
+
+  const highlighted = tasks.filter(t => t.isHighlighted);
+  const normal = tasks.filter(t => !t.isHighlighted);
+
+  // Sort: undone first, done last within each group
+  const sortSection = arr => [...arr].sort((a,b) => a.isDone === b.isDone ? 0 : a.isDone ? 1 : -1);
+
+  const renderCard = t => {
+    const tags = [];
+    if (t.isCarriedOver) tags.push('<span class="tag tag-carried">從昨日延續</span>');
+    if (t.domain) tags.push(`<span class="tag tag-domain">${esc(t.domain)}</span>`);
+    if (t.goal) tags.push(`<span class="tag tag-goal">${esc(t.goal)}</span>`);
+    if (t.estimatedMinutes) tags.push(`<span class="tag tag-duration">${t.estimatedMinutes}分鐘</span>`);
+    if (tags.length === 0) tags.push('<span class="tag-empty">點擊展開屬性</span>');
+
+    return `<div class="task-card${t.isHighlighted?' highlighted':''}${t.isDone?' done':''}" data-id="${t.id}" draggable="true">
+      <div class="task-check${t.isDone?' done':''}" data-action="toggle">${t.isDone?'✓':''}</div>
+      <div class="task-body">
+        <div class="task-title">${esc(t.title)}</div>
+        <div class="task-tags">${tags.join('')}</div>
+        <div class="task-expand">
+          <div class="expand-row">
+            <select data-field="domain"><option value="">選擇領域...</option>${settings.domains.map(d => `<option ${t.domain===d?'selected':''}>${esc(d)}</option>`).join('')}</select>
+            <select data-field="goal"><option value="">選擇目標...</option>${settings.goals.map(g => `<option ${t.goal===g.name?'selected':''}>${esc(g.name)}</option>`).join('')}</select>
+          </div>
+          <div class="expand-row">
+            <input type="number" data-field="minutes" placeholder="預估分鐘" value="${t.estimatedMinutes||''}" min="1" max="480">
+          </div>
+        </div>
+      </div>
+      <button class="btn-star${t.isHighlighted?' on':' off'}" data-action="star">${t.isHighlighted?'★':'☆'}</button>
+      <button class="btn-delete" data-action="delete">✕</button>
+    </div>`;
+  };
+
+  let html = '';
+  if (highlighted.length > 0) {
+    html += '<div class="section-label">★ 今日重點</div><div class="task-list">';
+    html += sortSection(highlighted).map(renderCard).join('');
+    html += '</div><div class="list-divider"></div>';
+  }
+  html += '<div class="section-label">待辦事項</div><div class="task-list">';
+  html += sortSection(normal).map(renderCard).join('');
+  html += '</div>';
+
+  container.innerHTML = html;
+
+  // Event delegation
+  container.querySelectorAll('.task-card').forEach(card => {
+    const id = card.dataset.id;
+    card.addEventListener('click', e => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      if (action === 'toggle') { toggleDone(id); return; }
+      if (action === 'star') { toggleHighlight(id); return; }
+      if (action === 'delete') { deleteTask(id); return; }
+      // Click card body = expand
+      if (!e.target.closest('button') && !e.target.closest('select') && !e.target.closest('input')) {
+        card.classList.toggle('expanded');
+      }
+    });
+    // Edit fields
+    card.querySelectorAll('select, input').forEach(el => {
+      el.addEventListener('change', () => updateTaskFields(id));
+      el.addEventListener('click', e => e.stopPropagation());
+    });
+    // Drag
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragover', handleDragOver);
+    card.addEventListener('dragleave', handleDragLeave);
+    card.addEventListener('drop', handleDrop);
+    card.addEventListener('dragend', handleDragEnd);
+    // Long press for mobile drag
+    card.addEventListener('touchstart', handleTouchStart, {passive:false});
+    card.addEventListener('touchmove', handleTouchMove, {passive:false});
+    card.addEventListener('touchend', handleTouchEnd);
+  });
+}
+
+function renderGoalsPage() {
+  const container = document.getElementById('goals-content');
+  container.innerHTML = `
+    <div class="goals-section">
+      <h3>生活領域</h3>
+      <div class="sub">管理你生活中的各個領域分類</div>
+      ${settings.domains.map(d => `
+        <div class="domain-item">
+          <span>${esc(d)}</span>
+          <button class="btn-del-sm" data-action="del-domain" data-name="${esc(d)}">✕</button>
+        </div>
+      `).join('')}
+      <div class="add-row">
+        <input id="new-domain-input" placeholder="新增領域...">
+        <button class="btn-add-sm" id="btn-add-domain">+ 新增</button>
+      </div>
+    </div>
+    <div class="goals-section">
+      <h3>目標管理</h3>
+      <div class="sub">設定你想達成的目標，可關聯到特定領域</div>
+      ${settings.goals.map(g => `
+        <div class="goal-item">
+          <span>${esc(g.name)} <span class="meta">${esc(g.domain||'不限')}</span></span>
+          <button class="btn-del-sm" data-action="del-goal" data-name="${esc(g.name)}">✕</button>
+        </div>
+      `).join('')}
+      <div class="add-row">
+        <input id="new-goal-name" placeholder="新增目標名稱...">
+        <select id="new-goal-domain">
+          <option value="">不限領域</option>
+          ${settings.domains.map(d => `<option>${esc(d)}</option>`).join('')}
+        </select>
+        <button class="btn-add-sm" id="btn-add-goal">+ 新增</button>
+      </div>
+    </div>`;
+
+  container.querySelectorAll('[data-action="del-domain"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.name;
+      settings.domains = settings.domains.filter(d => d !== name);
+      saveSettings(settings);
+      showToast(`已刪除領域「${name}」`);
+      renderAll();
+    });
+  });
+  container.querySelectorAll('[data-action="del-goal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.name;
+      settings.goals = settings.goals.filter(g => g.name !== name);
+      saveSettings(settings);
+      showToast(`已刪除目標「${name}」`);
+      renderAll();
+    });
+  });
+
+  const btnDomain = document.getElementById('btn-add-domain');
+  const inpDomain = document.getElementById('new-domain-input');
+  if (btnDomain) {
+    btnDomain.addEventListener('click', () => addDomain(inpDomain));
+    inpDomain.addEventListener('keydown', e => { if (e.key==='Enter') addDomain(inpDomain); });
+  }
+  const btnGoal = document.getElementById('btn-add-goal');
+  const inpGoal = document.getElementById('new-goal-name');
+  const selGoal = document.getElementById('new-goal-domain');
+  if (btnGoal) {
+    btnGoal.addEventListener('click', () => addGoal(inpGoal, selGoal));
+    inpGoal.addEventListener('keydown', e => { if (e.key==='Enter') addGoal(inpGoal, selGoal); });
+  }
+}
+
+function renderAll() {
+  renderWeekStrip();
+  if (currentPage === 'task') renderTaskList();
+  if (currentPage === 'goals') renderGoalsPage();
+}
+
+/* ── TASK ACTIONS ── */
+function addTask() {
+  const input = document.getElementById('task-input');
+  const title = input.value.trim();
+  if (!title) return;
+  const task = {
+    id: genId(), title, domain: null, goal: null,
+    estimatedMinutes: null, isHighlighted: false,
+    isDone: false, isCarriedOver: false, createdAt: activeDate
+  };
+  if (!allTasks[activeDate]) allTasks[activeDate] = [];
+  allTasks[activeDate].push(task);
+  saveTasks(allTasks);
+  input.value = '';
+  renderAll();
+  input.focus();
+}
+
+function toggleDone(id) {
+  const tasks = allTasks[activeDate] || [];
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.isDone = !t.isDone; saveTasks(allTasks); }
+  renderAll();
+}
+
+function toggleHighlight(id) {
+  const tasks = allTasks[activeDate] || [];
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  if (!t.isHighlighted) {
+    const count = tasks.filter(t => t.isHighlighted).length;
+    if (count >= 5) { showToast('最多 5 個重點任務'); return; }
+  }
+  t.isHighlighted = !t.isHighlighted;
+  saveTasks(allTasks);
+  renderAll();
+}
+
+function deleteTask(id) {
+  if (!allTasks[activeDate]) return;
+  allTasks[activeDate] = allTasks[activeDate].filter(t => t.id !== id);
+  saveTasks(allTasks);
+  renderAll();
+}
+
+function updateTaskFields(id) {
+  const tasks = allTasks[activeDate] || [];
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  const card = document.querySelector(`[data-id="${id}"]`);
+  if (!card) return;
+  const domain = card.querySelector('[data-field="domain"]')?.value || null;
+  const goal = card.querySelector('[data-field="goal"]')?.value || null;
+  const min = parseInt(card.querySelector('[data-field="minutes"]')?.value) || null;
+  t.domain = domain; t.goal = goal; t.estimatedMinutes = min;
+  saveTasks(allTasks);
+  renderAll();
+}
+
+/* ── GOALS ACTIONS ── */
+function addDomain(input) {
+  const name = input.value.trim();
+  if (!name) return;
+  if (settings.domains.includes(name)) { showToast('領域已存在'); return; }
+  settings.domains.push(name);
+  saveSettings(settings);
+  input.value = '';
+  renderAll();
+}
+function addGoal(nameInp, sel) {
+  const name = nameInp.value.trim();
+  if (!name) return;
+  if (settings.goals.some(g => g.name === name)) { showToast('目標已存在'); return; }
+  settings.goals.push({ name, domain: sel.value || null });
+  saveSettings(settings);
+  nameInp.value = '';
+  renderAll();
+}
+
+/* ── DRAG & DROP ── */
+let dragId = null;
+function handleDragStart(e) {
+  dragId = this.dataset.id;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if (this.dataset.id !== dragId) this.classList.add('drag-over');
+}
+function handleDragLeave(e) {
+  this.classList.remove('drag-over');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  if (this.dataset.id === dragId || !dragId) return;
+  const tasks = allTasks[activeDate] || [];
+  const fromIdx = tasks.findIndex(t => t.id === dragId);
+  const toIdx = tasks.findIndex(t => t.id === this.dataset.id);
+  if (fromIdx < 0 || toIdx < 0) return;
+  const [moved] = tasks.splice(fromIdx, 1);
+  tasks.splice(toIdx, 0, moved);
+  saveTasks(allTasks);
+  renderAll();
+}
+function handleDragEnd(e) {
+  this.classList.remove('dragging');
+  dragId = null;
+  document.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+}
+
+/* ── LONG PRESS MOBILE DRAG ── */
+let touchStartTime, touchStartY, touchCard;
+function handleTouchStart(e) {
+  touchCard = this;
+  touchStartTime = Date.now();
+  touchStartY = e.touches[0].clientY;
+}
+function handleTouchMove(e) {
+  if (Date.now() - touchStartTime > 400 && !isDragging) {
+    isDragging = true;
+    touchCard.draggable = true;
+    touchCard.classList.add('dragging');
+  }
+}
+function handleTouchEnd(e) {
+  if (isDragging) {
+    isDragging = false;
+    touchCard.draggable = false;
+    touchCard.classList.remove('dragging');
+  }
+  touchCard = null;
+}
+
+/* ── SWIPE WEEK ── */
+let swipeStartX = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const stripWrap = document.querySelector('.week-strip-wrap');
+  stripWrap.addEventListener('touchstart', e => {
+    swipeStartX = e.touches[0].clientX;
+  }, {passive:true});
+  stripWrap.addEventListener('touchend', e => {
+    const diff = e.changedTouches[0].clientX - swipeStartX;
+    if (Math.abs(diff) > 60) {
+      weekOffset += diff > 0 ? -1 : 1;
+      renderAll();
+    }
+  });
+});
+
+/* ── PAGE SWITCHING ── */
+document.querySelectorAll('.page-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    currentPage = tab.dataset.page;
+    document.getElementById('page-' + currentPage).classList.add('active');
+    document.querySelector('.bottom-bar').style.display = currentPage === 'task' ? 'flex' : 'none';
+    if (currentPage === 'goals') renderGoalsPage();
+  });
+});
+
+/* ── INPUT ── */
+document.getElementById('btn-add').addEventListener('click', addTask);
+document.getElementById('task-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+/* ── TOAST ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('fade');
+  t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => { t.classList.add('fade'); }, 1500);
+}
+
+/* ── HELPERS ── */
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ── INIT ── */
+carryOver(activeDate);
+renderAll();
+</script>
+</body>
+</html>
