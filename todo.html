@@ -317,6 +317,7 @@ function carryOver(date) {
   const yesterday = new Date(date);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayKey = dateKey(yesterday);
+  if (yesterdayKey >= getToday()) return; // only carry over from days that have ended
   const yTasks = allTasks[yesterdayKey] || [];
   const undone = yTasks.filter(t => !t.isDone);
   if (undone.length === 0) return;
