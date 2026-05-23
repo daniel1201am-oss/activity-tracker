@@ -38,7 +38,7 @@ body{
 .page{display:none}
 .page.active{display:block}
 
-.week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px}
+.week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px;overflow:hidden}
 .week-strip{display:flex;gap:4px;justify-content:center}
 .day-btn{
   flex:1;max-width:48px;padding:6px 2px;border:none;border-radius:14px;
@@ -651,18 +651,57 @@ function handleTouchEnd(e) {
 }
 
 /* ── SWIPE WEEK ── */
-let swipeStartX = 0;
 (function bindSwipe() {
-  const stripWrap = document.querySelector('.week-strip-wrap');
-  if (!stripWrap) return;
-  stripWrap.addEventListener('touchstart', e => {
-    swipeStartX = e.touches[0].clientX;
+  const wrap = document.querySelector('.week-strip-wrap');
+  if (!wrap) return;
+  let startX = 0, tracking = false, moved = false;
+  const SWIPE_THRESHOLD = 60;
+
+  wrap.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    tracking = true; moved = false;
+    wrap.style.transition = 'none';
   }, {passive:true});
-  stripWrap.addEventListener('touchend', e => {
-    const diff = e.changedTouches[0].clientX - swipeStartX;
-    if (Math.abs(diff) > 50) {
-      weekOffset += diff > 0 ? -1 : 1;
-      renderAll();
+
+  wrap.addEventListener('touchmove', e => {
+    if (!tracking) return;
+    const dx = e.touches[0].clientX - startX;
+    if (Math.abs(dx) > 10) moved = true;
+    // Rubber-band damping
+    const damped = Math.sign(dx) * Math.min(Math.abs(dx) * 0.6, 80);
+    wrap.style.transform = `translateX(${damped}px)`;
+    wrap.style.opacity = 1 - Math.min(Math.abs(dx) / 180, 0.2);
+  }, {passive:true});
+
+  wrap.addEventListener('touchend', e => {
+    tracking = false;
+    if (!moved) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    wrap.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.25s ease';
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      const dir = dx > 0 ? 1 : -1;
+      // Slide out
+      wrap.style.transform = `translateX(${dir * 120}%)`;
+      wrap.style.opacity = '0';
+      setTimeout(() => {
+        weekOffset += -dir;
+        renderAll();
+        // Reset position for slide-in
+        wrap.style.transition = 'none';
+        wrap.style.transform = `translateX(${-dir * 120}%)`;
+        wrap.style.opacity = '0';
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            wrap.style.transition = 'transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease';
+            wrap.style.transform = 'translateX(0)';
+            wrap.style.opacity = '1';
+          });
+        });
+      }, 250);
+    } else {
+      // Spring back
+      wrap.style.transform = 'translateX(0)';
+      wrap.style.opacity = '1';
     }
   });
 })();
