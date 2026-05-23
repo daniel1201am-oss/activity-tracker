@@ -698,7 +698,7 @@ function handleTouchEnd(e) {
     if (Math.abs(dx) > THRESHOLD) {
       const dir = dx > 0 ? -1 : 1;
       weekOffset += dir;
-      baseX = getBaseX() + dir * wrap.offsetWidth;
+      baseX = baseX - dir * wrap.offsetWidth;
       track.style.transition = 'transform 0.7s cubic-bezier(0.25, 0.8, 0.25, 1)';
       track.style.transform = `translateX(${baseX}px)`;
       setTimeout(() => {
