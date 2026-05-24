@@ -408,6 +408,18 @@ function addRecurringTemplate(task) {
     recurrence: task.recurrence ? { ...task.recurrence } : null, createdAt: task.createdAt
   });
   saveRecurringTemplates(recurringTemplates);
+  let propagated = false;
+  for (const dk of Object.keys(allTasks)) {
+    for (const t of (allTasks[dk] || [])) {
+      if (t.recurrenceSourceId === task.id) {
+        t.goal = task.goal;
+        t.estimatedMinutes = task.estimatedMinutes;
+        t.isHighlighted = task.isHighlighted;
+        propagated = true;
+      }
+    }
+  }
+  if (propagated) saveTasks(allTasks);
 }
 
 function removeRecurringTemplate(taskId) {
