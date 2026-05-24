@@ -19,7 +19,7 @@
 body{
   min-height:100vh;background:#f2f2f7;color:#1c1c1e;
   font-family:'Inter','Noto Sans TC',-apple-system,'SF Pro Text','PingFang TC',sans-serif;
-  -webkit-tap-highlight-color:transparent;padding-bottom:100px;user-select:none;
+  -webkit-tap-highlight-color:transparent;padding-bottom:100px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   overflow-x:hidden;touch-action:manipulation;
   overscroll-behavior-x:none;
 }
@@ -78,7 +78,7 @@ body{
 .task-card.highlighted .task-title{font-weight:700}
 .task-card.done{opacity:.45}
 .task-card.done .task-title{text-decoration:line-through}
-.task-card.dragging{opacity:.5;transform:scale(.98);pointer-events:none;position:relative;z-index:100}
+.task-card.dragging{opacity:.5;transform:scale(.98);pointer-events:none;position:relative;z-index:100;transition:none}
 .task-card.drag-over{border-top:3px solid #ff6b00}
 
 .task-check{
