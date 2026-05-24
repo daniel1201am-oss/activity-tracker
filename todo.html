@@ -38,6 +38,13 @@ body{
 .page-tab.active{color:#1c1c1e;border-bottom-color:#ff6b00}
 .page{display:none}
 .page.active{display:block}
+#task-swipe-container{position:relative;overflow:hidden}
+.swipe-hint{
+  position:absolute;top:50%;transform:translateY(-50%);font-size:28px;color:#d1d1d6;
+  opacity:0;transition:opacity .15s;pointer-events:none;z-index:5
+}
+.swipe-hint-left{left:16px}.swipe-hint-right{right:16px}
+.swipe-hint.visible{opacity:1}
 
 .week-strip-wrap{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 8px;overflow:hidden;touch-action:pan-y;position:relative}
 .week-track{display:flex;gap:0;will-change:transform;transition:none}
@@ -99,6 +106,13 @@ body{
 .tag-duration{background:#f2f2f7;color:#8e8e93}
 .tag-carried{background:#e8edf3;color:#334155;font-style:italic}
 .tag-empty{font-size:10px;color:#aeaeb2;font-style:italic}
+.tag-recurring{background:#e8f0fe;color:#1a73e8}
+.recurrence-days{display:none;gap:4px;flex-wrap:wrap}
+.recurrence-day-btn{
+  width:32px;height:32px;border-radius:50%;border:1px solid #e5e5ea;
+  background:#fff;font-size:11px;cursor:pointer;font-family:inherit;color:#1c1c1e;transition:all .15s
+}
+.recurrence-day-btn.selected{background:#ff6b00;border-color:#ff6b00;color:#fff}
 
 .btn-star{
   width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;background:transparent;
@@ -218,7 +232,11 @@ body{
   <div class="week-strip-wrap" id="week-strip-wrap">
     <div class="week-track" id="week-track"></div>
   </div>
-  <div id="task-content"></div>
+  <div id="task-swipe-container">
+    <div class="swipe-hint swipe-hint-left">◀</div>
+    <div class="swipe-hint swipe-hint-right">▶</div>
+    <div id="task-content"></div>
+  </div>
 </div>
 
 <!-- GOALS PAGE -->
@@ -237,6 +255,7 @@ body{
 /* ── DATA LAYER ── */
 const LS_TASKS = 'daily-tasks';
 const LS_SETTINGS = 'daily-settings';
+const LS_RECURRING = 'recurring-templates';
 
 function loadTasks() {
   try { return JSON.parse(localStorage.getItem(LS_TASKS)) || {}; }
@@ -257,6 +276,12 @@ function loadSettings() {
 }
 function saveSettings(data) { localStorage.setItem(LS_SETTINGS, JSON.stringify(data)); }
 
+function loadRecurringTemplates() {
+  try { return JSON.parse(localStorage.getItem(LS_RECURRING)) || []; }
+  catch { return []; }
+}
+function saveRecurringTemplates(data) { localStorage.setItem(LS_RECURRING, JSON.stringify(data)); }
+
 function getDefaultSettings() {
   return {
     goals: ['晉升區域經理', '體脂降到15%', '每月讀兩本書', '每月儲蓄30%']
@@ -270,6 +295,7 @@ let activeDate = getToday();
 let weekOffset = 0;
 let currentPage = 'task';
 let isDragging = false;
+let recurringTemplates = loadRecurringTemplates();
 
 function getToday() {
   const d = new Date();
@@ -318,13 +344,73 @@ function carryOver(date) {
   const yesterdayKey = dateKey(yesterday);
   if (yesterdayKey >= getToday()) return; // only carry over from days that have ended
   const yTasks = allTasks[yesterdayKey] || [];
-  const undone = yTasks.filter(t => !t.isDone);
+  const undone = yTasks.filter(t => !t.isDone && !t.isRecurringInstance && !t.recurrence);
   if (undone.length === 0) return;
   const carried = undone.map(t => ({
     ...t, id: genId(), isHighlighted: false, isDone: false, isCarriedOver: true, createdAt: date
   }));
   allTasks[date] = carried;
   saveTasks(allTasks);
+}
+
+/* ── RECURRENCE ── */
+function shouldRecurOnDate(tmpl, dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const created = new Date(tmpl.createdAt + 'T00:00:00');
+  if (dateStr <= tmpl.createdAt) return false;
+  switch (tmpl.recurrence.type) {
+    case 'daily': return true;
+    case 'weekly': return d.getDay() === created.getDay();
+    case 'weekly-custom': return (tmpl.recurrence.daysOfWeek || []).includes(d.getDay());
+    case 'monthly': return d.getDate() === created.getDate();
+    default: return false;
+  }
+}
+
+function generateRecurringInstances(dateStr) {
+  let changed = false;
+  const existing = allTasks[dateStr] || [];
+  for (const tmpl of recurringTemplates) {
+    if (!shouldRecurOnDate(tmpl, dateStr)) continue;
+    if (existing.some(t => t.recurrenceSourceId === tmpl.id)) continue;
+    const instance = {
+      id: genId(), title: tmpl.title, domain: null,
+      goal: tmpl.goal, estimatedMinutes: tmpl.estimatedMinutes,
+      isHighlighted: tmpl.isHighlighted, isDone: false,
+      isCarriedOver: false, createdAt: dateStr,
+      isRecurringInstance: true, recurrenceSourceId: tmpl.id
+    };
+    if (!allTasks[dateStr]) allTasks[dateStr] = [];
+    allTasks[dateStr].push(instance);
+    changed = true;
+  }
+  if (changed) saveTasks(allTasks);
+}
+
+function recurrenceTypeLabel(type, daysOfWeek) {
+  const dayNames = ['日','一','二','三','四','五','六'];
+  switch (type) {
+    case 'daily': return '每天';
+    case 'weekly': return '每週';
+    case 'weekly-custom': return '每週 ' + (daysOfWeek||[]).map(d => dayNames[d]).join(',');
+    case 'monthly': return '每月';
+    default: return '';
+  }
+}
+
+function addRecurringTemplate(task) {
+  removeRecurringTemplate(task.id);
+  recurringTemplates.push({
+    id: task.id, title: task.title, goal: task.goal,
+    estimatedMinutes: task.estimatedMinutes, isHighlighted: task.isHighlighted,
+    recurrence: task.recurrence ? { ...task.recurrence } : null, createdAt: task.createdAt
+  });
+  saveRecurringTemplates(recurringTemplates);
+}
+
+function removeRecurringTemplate(taskId) {
+  recurringTemplates = recurringTemplates.filter(t => t.id !== taskId);
+  saveRecurringTemplates(recurringTemplates);
 }
 
 /* ── RENDER ── */
@@ -382,6 +468,7 @@ function renderWeekStrip(animateIn) {
 
 function renderTaskList() {
   const container = document.getElementById('task-content');
+  generateRecurringInstances(activeDate);
   carryOver(activeDate);
   let tasks = getTasks(activeDate);
 
@@ -399,26 +486,54 @@ function renderTaskList() {
   // Sort: undone first, done last within each group
   const sortSection = arr => [...arr].sort((a,b) => a.isDone === b.isDone ? 0 : a.isDone ? 1 : -1);
 
+  const dayNames = ['日','一','二','三','四','五','六'];
   const renderCard = t => {
     const tags = [];
     if (t.isCarriedOver) tags.push('<span class="tag tag-carried">從昨日延續</span>');
     if (t.goal) tags.push(`<span class="tag tag-goal">${esc(t.goal)}</span>`);
     if (t.estimatedMinutes) tags.push(`<span class="tag tag-duration">${t.estimatedMinutes}分鐘</span>`);
+    if (t.recurrence && !t.isRecurringInstance) {
+      tags.push(`<span class="tag tag-recurring">⟳ ${recurrenceTypeLabel(t.recurrence.type, t.recurrence.daysOfWeek)}</span>`);
+    }
+    if (t.isRecurringInstance) {
+      tags.push('<span class="tag tag-recurring">⟳ 重複任務</span>');
+    }
     if (tags.length === 0) tags.push('<span class="tag-empty">點擊展開屬性</span>');
+
+    let expandHTML = `
+      <div class="expand-row">
+        <select data-field="goal"><option value="">選擇目標...</option>${settings.goals.map(g => `<option ${t.goal===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
+      </div>
+      <div class="expand-row">
+        <input type="number" data-field="minutes" placeholder="預估分鐘" value="${t.estimatedMinutes||''}" min="1" max="480">
+      </div>`;
+
+    if (!t.isRecurringInstance) {
+      const recType = (t.recurrence && t.recurrence.type) || '';
+      const selectedDays = (t.recurrence && t.recurrence.daysOfWeek) || [];
+      expandHTML += `
+      <div class="expand-row">
+        <select data-field="recurrence">
+          <option value="">不重複</option>
+          <option value="daily"${recType==='daily'?' selected':''}>每天</option>
+          <option value="weekly"${recType==='weekly'?' selected':''}>每週</option>
+          <option value="weekly-custom"${recType==='weekly-custom'?' selected':''}>每週自訂</option>
+          <option value="monthly"${recType==='monthly'?' selected':''}>每月</option>
+        </select>
+      </div>
+      <div class="expand-row recurrence-days" data-recurrence-days style="${recType==='weekly-custom'?'display:flex':'display:none'}">
+        ${dayNames.map((dn,i) => `<button type="button" class="recurrence-day-btn${selectedDays.includes(i)?' selected':''}" data-day="${i}">${dn}</button>`).join('')}
+      </div>`;
+    }
+
+    expandHTML += '';
 
     return `<div class="task-card${t.isHighlighted?' highlighted':''}${t.isDone?' done':''}" data-id="${t.id}" draggable="true">
       <div class="task-check${t.isDone?' done':''}" data-action="toggle">${t.isDone?'✓':''}</div>
       <div class="task-body">
         <div class="task-title">${esc(t.title)}</div>
         <div class="task-tags">${tags.join('')}</div>
-        <div class="task-expand">
-          <div class="expand-row">
-            <select data-field="goal"><option value="">選擇目標...</option>${settings.goals.map(g => `<option ${t.goal===g?'selected':''}>${esc(g)}</option>`).join('')}</select>
-          </div>
-          <div class="expand-row">
-            <input type="number" data-field="minutes" placeholder="預估分鐘" value="${t.estimatedMinutes||''}" min="1" max="480">
-          </div>
-        </div>
+        <div class="task-expand">${expandHTML}</div>
       </div>
       <button class="btn-star${t.isHighlighted?' on':' off'}" data-action="star">${t.isHighlighted?'★':'☆'}</button>
       <button class="btn-delete" data-action="delete">✕</button>
@@ -455,6 +570,22 @@ function renderTaskList() {
       el.addEventListener('change', () => updateTaskFields(id));
       el.addEventListener('click', e => e.stopPropagation());
     });
+    // Recurrence day buttons
+    card.querySelectorAll('.recurrence-day-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        btn.classList.toggle('selected');
+        updateTaskFields(id);
+      });
+    });
+    // Recurrence select toggle day picker visibility
+    const recSelect = card.querySelector('[data-field="recurrence"]');
+    if (recSelect) {
+      recSelect.addEventListener('change', () => {
+        const daysRow = card.querySelector('[data-recurrence-days]');
+        if (daysRow) daysRow.style.display = recSelect.value === 'weekly-custom' ? 'flex' : 'none';
+      });
+    }
     // Drag
     card.addEventListener('dragstart', handleDragStart);
     card.addEventListener('dragover', handleDragOver);
@@ -575,6 +706,8 @@ function toggleHighlight(id) {
 
 function deleteTask(id) {
   if (!allTasks[activeDate]) return;
+  const t = allTasks[activeDate].find(t => t.id === id);
+  if (t && !t.isRecurringInstance) removeRecurringTemplate(id);
   allTasks[activeDate] = allTasks[activeDate].filter(t => t.id !== id);
   saveTasks(allTasks);
   renderAll();
@@ -589,6 +722,20 @@ function updateTaskFields(id) {
   const goal = card.querySelector('[data-field="goal"]')?.value || null;
   const min = parseInt(card.querySelector('[data-field="minutes"]')?.value) || null;
   t.goal = goal; t.estimatedMinutes = min;
+  if (!t.isRecurringInstance) {
+    const recSelect = card.querySelector('[data-field="recurrence"]');
+    const recType = recSelect ? (recSelect.value || null) : null;
+    if (recType) {
+      const days = recType === 'weekly-custom'
+        ? Array.from(card.querySelectorAll('.recurrence-day-btn.selected')).map(b => parseInt(b.dataset.day))
+        : null;
+      t.recurrence = { type: recType, daysOfWeek: days };
+      addRecurringTemplate(t);
+    } else {
+      t.recurrence = null;
+      removeRecurringTemplate(t.id);
+    }
+  }
   saveTasks(allTasks);
   renderAll();
 }
@@ -828,6 +975,125 @@ function handleTouchCancel(e) {
   document.addEventListener('touchcancel', commitSwipe, {passive:true});
 })();
 
+/* ── SWIPE TASK AREA (day navigation) ── */
+(function bindTaskSwipe() {
+  const container = document.getElementById('task-swipe-container');
+  const content = document.getElementById('task-content');
+  const hintLeft = document.querySelector('.swipe-hint-left');
+  const hintRight = document.querySelector('.swipe-hint-right');
+  if (!container || !content) return;
+
+  const THRESHOLD = 80;
+  const ACTIVATE = 20;
+  const BIAS = 1.5;
+
+  let tracking = false, active = false, startX = 0, startY = 0, currentDx = 0;
+
+  function getAdjacentDate(dir) {
+    const d = new Date(activeDate + 'T00:00:00');
+    d.setDate(d.getDate() + dir);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  function springBack() {
+    content.style.transition = 'transform 0.3s ease-out';
+    content.style.transform = 'translateX(0)';
+    setTimeout(() => { content.style.transition = 'none'; content.style.transform = ''; }, 300);
+  }
+
+  container.addEventListener('touchstart', e => {
+    if (isDragging) return;
+    content.style.transition = 'none';
+    content.style.transform = '';
+    tracking = true;
+    active = false;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    currentDx = 0;
+  }, {passive:true});
+
+  container.addEventListener('touchmove', e => {
+    if (!tracking || isDragging) { tracking = false; return; }
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+
+    if (!active) {
+      if (Math.abs(dx) > ACTIVATE && Math.abs(dx) > Math.abs(dy) * BIAS) {
+        active = true;
+      } else if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+        tracking = false;
+        return;
+      } else {
+        return;
+      }
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    currentDx = dx;
+    content.style.transform = `translateX(${dx}px)`;
+    if (hintLeft) hintLeft.classList.toggle('visible', dx > 0);
+    if (hintRight) hintRight.classList.toggle('visible', dx < 0);
+  }, {passive:false});
+
+  container.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    if (hintLeft) hintLeft.classList.remove('visible');
+    if (hintRight) hintRight.classList.remove('visible');
+
+    if (!active) return;
+    active = false;
+
+    const w = container.offsetWidth;
+    const dx = currentDx;
+
+    if (Math.abs(dx) < THRESHOLD) { springBack(); return; }
+
+    const dir = dx > 0 ? -1 : 1;
+    const newDate = getAdjacentDate(dir);
+    const dirOut = dir > 0 ? -w : w;
+
+    content.style.transition = 'transform 0.25s ease-out';
+    content.style.transform = `translateX(${dirOut}px)`;
+
+    content.addEventListener('transitionend', function onOut() {
+      content.removeEventListener('transitionend', onOut);
+      content.style.transition = 'none';
+
+      activeDate = newDate;
+      const d = new Date(newDate + 'T00:00:00');
+      const today = new Date(getToday() + 'T00:00:00');
+      const diffDays = Math.round((d - today) / 86400000);
+      weekOffset = Math.floor(diffDays / 7);
+
+      renderAll();
+
+      content.style.transition = 'none';
+      content.style.transform = `translateX(${-dirOut}px)`;
+      content.offsetHeight;
+      content.style.transition = 'transform 0.25s ease-out';
+      content.style.transform = 'translateX(0)';
+
+      setTimeout(() => {
+        content.style.transition = 'none';
+        content.style.transform = '';
+      }, 260);
+    }, {once:true});
+  }, {passive:true});
+
+  container.addEventListener('touchcancel', e => {
+    if (!tracking) return;
+    tracking = false;
+    active = false;
+    currentDx = 0;
+    if (hintLeft) hintLeft.classList.remove('visible');
+    if (hintRight) hintRight.classList.remove('visible');
+    content.style.transition = 'none';
+    content.style.transform = '';
+  });
+})();
+
 /* ── PAGE SWITCHING ── */
 document.querySelectorAll('.page-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -873,6 +1139,7 @@ function showToast(msg) {
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* ── INIT ── */
+generateRecurringInstances(activeDate);
 carryOver(activeDate);
 renderAll();
 </script>
