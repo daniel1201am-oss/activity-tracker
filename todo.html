@@ -1070,9 +1070,11 @@ function handleTouchCancel(e) {
 
       activeDate = newDate;
       const d = new Date(newDate + 'T00:00:00');
-      const today = new Date(getToday() + 'T00:00:00');
-      const diffDays = Math.round((d - today) / 86400000);
-      weekOffset = Math.floor(diffDays / 7);
+      const dow = d.getDay() || 7;
+      const targetMonday = new Date(d);
+      targetMonday.setDate(d.getDate() - dow + 1);
+      const currentMonday = getWeekMonday(0);
+      weekOffset = Math.round((targetMonday - currentMonday) / 604800000);
 
       renderAll();
 
