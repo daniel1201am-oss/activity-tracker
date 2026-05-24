@@ -78,7 +78,7 @@ body{
 .task-card.highlighted .task-title{font-weight:700}
 .task-card.done{opacity:.45}
 .task-card.done .task-title{text-decoration:line-through}
-.task-card.dragging{opacity:.5;transform:scale(.98)}
+.task-card.dragging{opacity:.5;transform:scale(.98);pointer-events:none;position:relative;z-index:100}
 .task-card.drag-over{border-top:3px solid #ff6b00}
 
 .task-check{
@@ -269,7 +269,6 @@ let settings = loadSettings();
 let activeDate = getToday();
 let weekOffset = 0;
 let currentPage = 'task';
-let longPressTimer = null;
 let isDragging = false;
 
 function getToday() {
@@ -466,6 +465,7 @@ function renderTaskList() {
     card.addEventListener('touchstart', handleTouchStart, {passive:false});
     card.addEventListener('touchmove', handleTouchMove, {passive:false});
     card.addEventListener('touchend', handleTouchEnd);
+    card.addEventListener('touchcancel', handleTouchCancel);
   });
 }
 
@@ -656,26 +656,89 @@ function handleDragEnd(e) {
 }
 
 /* ── LONG PRESS MOBILE DRAG ── */
-let touchStartTime, touchStartY, touchCard;
+let touchStartTime, touchStartX, touchStartY, touchCard, lastDropTarget;
+
 function handleTouchStart(e) {
   touchCard = this;
   touchStartTime = Date.now();
+  touchStartX = e.touches[0].clientX;
   touchStartY = e.touches[0].clientY;
 }
+
 function handleTouchMove(e) {
-  if (Date.now() - touchStartTime > 400 && !isDragging) {
-    isDragging = true;
-    touchCard.draggable = true;
-    touchCard.classList.add('dragging');
+  if (!touchCard) return;
+  const dx = e.touches[0].clientX - touchStartX;
+  const dy = e.touches[0].clientY - touchStartY;
+
+  if (!isDragging) {
+    // 400ms hold + finger stayed within 10px to activate
+    if (Date.now() - touchStartTime > 400 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      isDragging = true;
+      touchCard.classList.add('dragging');
+      e.preventDefault();
+    }
+    return;
+  }
+
+  e.preventDefault();
+  touchCard.style.transform = `scale(.98) translateY(${dy}px)`;
+
+  // Find card under finger (pointer-events:none on .dragging lets us see through)
+  const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+  const cardUnder = el?.closest('.task-card');
+
+  if (lastDropTarget && lastDropTarget !== cardUnder) {
+    lastDropTarget.classList.remove('drag-over');
+  }
+  if (cardUnder && cardUnder !== touchCard) {
+    cardUnder.classList.add('drag-over');
+    lastDropTarget = cardUnder;
   }
 }
+
 function handleTouchEnd(e) {
   if (isDragging) {
-    isDragging = false;
-    touchCard.draggable = false;
+    const targetCard = lastDropTarget;
+
+    // Clean up visuals
     touchCard.classList.remove('dragging');
+    touchCard.style.transform = '';
+    touchCard.style.zIndex = '';
+    if (lastDropTarget) lastDropTarget.classList.remove('drag-over');
+
+    // Perform reorder
+    if (targetCard && targetCard !== touchCard) {
+      const tasks = getTasks(activeDate);
+      const fromIdx = tasks.findIndex(t => t.id === touchCard.dataset.id);
+      const toIdx = tasks.findIndex(t => t.id === targetCard.dataset.id);
+      if (fromIdx >= 0 && toIdx >= 0 && fromIdx !== toIdx) {
+        const [moved] = tasks.splice(fromIdx, 1);
+        tasks.splice(toIdx, 0, moved);
+        saveTasks(allTasks);
+        renderAll();
+        isDragging = false;
+        touchCard = null;
+        lastDropTarget = null;
+        return;
+      }
+    }
   }
+
+  isDragging = false;
   touchCard = null;
+  lastDropTarget = null;
+}
+
+function handleTouchCancel(e) {
+  if (isDragging) {
+    touchCard.classList.remove('dragging');
+    touchCard.style.transform = '';
+    touchCard.style.zIndex = '';
+    if (lastDropTarget) lastDropTarget.classList.remove('drag-over');
+  }
+  isDragging = false;
+  touchCard = null;
+  lastDropTarget = null;
 }
 
 /* ── SWIPE WEEK (momentum) ── */
