@@ -22,6 +22,7 @@ body{
   -webkit-tap-highlight-color:transparent;padding-bottom:100px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   overflow-x:hidden;touch-action:manipulation;
   overscroll-behavior-x:none;
+  display:flex;flex-direction:column;
 }
 .topbar{
   padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
@@ -38,7 +39,8 @@ body{
 .page-tab.active{color:#1c1c1e;border-bottom-color:#ff6b00}
 .page{display:none}
 .page.active{display:block}
-#task-swipe-container{position:relative;overflow:hidden}
+#page-task.active{display:flex;flex-direction:column;flex:1;min-height:0}
+#task-swipe-container{position:relative;overflow:hidden;flex:1;min-height:0}
 .swipe-hint{
   position:absolute;top:50%;transform:translateY(-50%);font-size:28px;color:#d1d1d6;
   opacity:0;transition:opacity .15s;pointer-events:none;z-index:5
@@ -342,7 +344,7 @@ function carryOver(date) {
   const yesterday = new Date(date);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayKey = dateKey(yesterday);
-  if (yesterdayKey >= getToday()) return; // only carry over from days that have ended
+  if (date > getToday()) return; // never carry over to future dates
   const yTasks = allTasks[yesterdayKey] || [];
   const undone = yTasks.filter(t => !t.isDone && !t.isRecurringInstance && !t.recurrence);
   if (undone.length === 0) return;
@@ -707,7 +709,12 @@ function toggleHighlight(id) {
 function deleteTask(id) {
   if (!allTasks[activeDate]) return;
   const t = allTasks[activeDate].find(t => t.id === id);
-  if (t && !t.isRecurringInstance) removeRecurringTemplate(id);
+  if (!t) return;
+  if (t.recurrence) {
+    if (confirm('是否也刪除所有未來的重複任務？')) removeRecurringTemplate(id);
+  } else if (t.isRecurringInstance) {
+    if (confirm('是否也停止此任務的未來重複？')) removeRecurringTemplate(t.recurrenceSourceId);
+  }
   allTasks[activeDate] = allTasks[activeDate].filter(t => t.id !== id);
   saveTasks(allTasks);
   renderAll();
